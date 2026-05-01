@@ -6,80 +6,171 @@
 <title>Scanner Test</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#000;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column}
-#video{width:100%;flex:1;object-fit:cover;display:block}
+body{background:#000;color:#fff;font-family:sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.video-wrap{flex:1;position:relative;overflow:hidden}
+#video{width:100%;height:100%;object-fit:cover;display:block}
 @keyframes scan{0%{top:5%}50%{top:90%}100%{top:5%}}
-.laser{position:absolute;left:10%;right:10%;height:3px;background:red;box-shadow:0 0 8px red;animation:scan 1.5s linear infinite;top:5%}
+.laser{position:absolute;left:5%;right:5%;height:3px;background:red;box-shadow:0 0 10px red,0 0 20px red;animation:scan 1.2s linear infinite;top:5%}
 .visor{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.box{position:relative;width:80%;max-width:350px;height:160px;border:2px solid rgba(255,255,255,0.3);border-radius:4px}
-.video-wrap{flex:1;position:relative}
-.footer{padding:16px;background:#111;text-align:center}
-#resultado{font-size:18px;font-weight:bold;color:#4ade80;margin-bottom:10px;min-height:28px;word-break:break-all}
-#estado{font-size:12px;color:#888;margin-bottom:10px}
-#conteo{font-size:11px;color:#555}
-button{padding:12px 24px;background:#4F46E5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+.box{position:relative;width:85%;max-width:360px;height:180px}
+.box::before,.box::after,.box .c2::before,.box .c2::after{content:'';position:absolute;width:30px;height:30px;border-color:#ff0;border-style:solid}
+.box::before{top:0;left:0;border-width:4px 0 0 4px}
+.box::after{top:0;right:0;border-width:4px 4px 0 0}
+.box .c2::before{bottom:0;left:0;border-width:0 0 4px 4px}
+.box .c2::after{bottom:0;right:0;border-width:0 4px 4px 0}
+.footer{padding:14px 16px;background:#111;text-align:center;flex-shrink:0}
+#resultado{font-size:16px;font-weight:bold;color:#4ade80;margin-bottom:6px;min-height:24px;word-break:break-all;padding:0 8px}
+#estado{font-size:12px;color:#aaa;margin-bottom:6px}
+#frames-info{font-size:11px;color:#555;margin-bottom:8px}
+.btns{display:flex;gap:8px;justify-content:center}
+button{padding:10px 20px;background:#4F46E5;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+button.sec{background:#333}
 </style>
 </head>
 <body>
+
 <div class="video-wrap">
   <video id="video" playsinline autoplay muted></video>
-  <div class="visor"><div class="box"><div class="laser"></div></div></div>
-</div>
-<div class="footer">
-  <div id="resultado">Apunta al codigo de barras</div>
-  <div id="estado">Iniciando camara...</div>
-  <div id="conteo">Frames analizados: <span id="frames">0</span></div>
-  <br>
-  <button onclick="location.reload()">Reiniciar</button>
+  <div class="visor"><div class="box"><div class="c2"></div><div class="laser"></div></div></div>
 </div>
 
+<div class="footer">
+  <div id="resultado">Apunta al codigo de barras</div>
+  <div id="estado">Iniciando...</div>
+  <div id="frames-info">Frames: <span id="fc">0</span> | Lib: <span id="lib">-</span></div>
+  <div class="btns">
+    <button onclick="location.reload()">🔄 Reiniciar</button>
+    <button class="sec" onclick="toggleLib()">Cambiar libreria</button>
+  </div>
+</div>
+
+<!-- Ambas librerias -->
+<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
+
 <script>
-var frames = 0;
+var frameCount = 0;
 var detectado = false;
+var modoActual = 'quagga'; // empezar con Quagga que es mejor para barcodes fisicos
+var streamActivo = null;
+var zxingReader = null;
 
 function setEstado(t){ document.getElementById('estado').textContent = t; }
 function setResultado(t){ document.getElementById('resultado').textContent = t; }
+function setLib(t){ document.getElementById('lib').textContent = t; }
 
 function beep(){
   try{
-    var ctx = new(window.AudioContext||window.webkitAudioContext)();
-    var o = ctx.createOscillator(), g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.value = 1047; o.type = 'sine';
-    g.gain.setValueAtTime(0.4, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-    o.start(); o.stop(ctx.currentTime + 0.3);
-    setTimeout(function(){
-      var o2 = ctx.createOscillator(), g2 = ctx.createGain();
-      o2.connect(g2); g2.connect(ctx.destination);
-      o2.frequency.value = 1319; o2.type = 'sine';
-      g2.gain.setValueAtTime(0.4, ctx.currentTime);
-      g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-      o2.start(); o2.stop(ctx.currentTime + 0.3);
-    }, 150);
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [1047,1319].forEach(function(f,i){
+      setTimeout(function(){
+        var o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.frequency.value=f;o.type='sine';
+        g.gain.setValueAtTime(0.5,ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
+        o.start();o.stop(ctx.currentTime+0.25);
+      },i*150);
+    });
   }catch(e){}
 }
 
-function iniciar(){
-  if(typeof ZXing === 'undefined'){ setTimeout(iniciar, 300); return; }
+function onDetectado(codigo, formato){
+  if(detectado) return;
+  detectado = true;
+  setResultado('✓ ' + codigo);
+  setEstado('Formato: ' + (formato||'desconocido') + ' — toca Reiniciar para otro');
+  beep();
+  if(navigator.vibrate) navigator.vibrate([100,50,200]);
+  document.getElementById('video').style.filter='brightness(2)';
+  setTimeout(function(){ document.getElementById('video').style.filter=''; },600);
+}
+
+// ── QUAGGA ──────────────────────────────────────────────────────
+function iniciarQuagga(){
+  setLib('QuaggaJS');
+  setEstado('Iniciando QuaggaJS...');
+
+  Quagga.init({
+    inputStream:{
+      name:'Live',
+      type:'LiveStream',
+      target: document.getElementById('video').parentElement,
+      constraints:{
+        facingMode:'environment',
+        width:{min:640,ideal:1280,max:1920},
+        height:{min:480,ideal:720,max:1080}
+      },
+      area:{ top:'10%', right:'5%', left:'5%', bottom:'10%' }
+    },
+    locator:{ patchSize:'medium', halfSample:false },
+    numOfWorkers: 2,
+    frequency: 10,
+    decoder:{
+      readers:[
+        'code_128_reader',
+        'ean_reader',
+        'ean_8_reader',
+        'code_39_reader',
+        'code_39_vin_reader',
+        'upc_reader',
+        'upc_e_reader',
+        'codabar_reader',
+        'i2of5_reader',
+        '2of5_reader',
+        'code_93_reader'
+      ],
+      debug:{ showCanvas:false, showPatches:false }
+    },
+    locate: true
+  }, function(err){
+    if(err){
+      setEstado('Error QuaggaJS: '+err+' — intenta cambiar libreria');
+      return;
+    }
+    Quagga.start();
+    setEstado('Camara activa — centra el codigo en el recuadro');
+  });
+
+  Quagga.onProcessed(function(){
+    frameCount++;
+    document.getElementById('fc').textContent = frameCount;
+  });
+
+  Quagga.onDetected(function(result){
+    if(!result||!result.codeResult) return;
+    var codigo = result.codeResult.code;
+    var formato = result.codeResult.format;
+    // Verificar confianza minima
+    var decodedCodes = result.codeResult.decodedCodes;
+    var err = decodedCodes.filter(function(x){ return x.error !== undefined; })
+                          .reduce(function(a,b){ return a+b.error; }, 0) / decodedCodes.length;
+    if(err > 0.25) return; // muy baja confianza, ignorar
+    onDetectado(codigo, formato);
+  });
+}
+
+// ── ZXING ────────────────────────────────────────────────────────
+function iniciarZXing(){
+  setLib('ZXing');
+  setEstado('Iniciando ZXing...');
 
   navigator.mediaDevices.getUserMedia({
     video:{
-      facingMode: {ideal:'environment'},
-      width:  {ideal: 1920},
-      height: {ideal: 1080},
-      focusMode: 'continuous'
+      facingMode:{ideal:'environment'},
+      width:{ideal:1280},
+      height:{ideal:720}
     }
   }).then(function(stream){
+    streamActivo = stream;
     var video = document.getElementById('video');
     video.srcObject = stream;
     video.play();
-    setEstado('Camara activa — acerca el codigo');
+    setEstado('Camara activa — centra el codigo');
 
     var hints = new Map();
     hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
       ZXing.BarcodeFormat.CODE_128,
       ZXing.BarcodeFormat.CODE_39,
       ZXing.BarcodeFormat.EAN_13,
@@ -88,33 +179,38 @@ function iniciar(){
       ZXing.BarcodeFormat.UPC_E,
       ZXing.BarcodeFormat.ITF,
       ZXing.BarcodeFormat.CODABAR,
-      ZXing.BarcodeFormat.CODE_93,
-      ZXing.BarcodeFormat.QR_CODE,
-      ZXing.BarcodeFormat.DATA_MATRIX
+      ZXing.BarcodeFormat.CODE_93
     ]);
 
-    var reader = new ZXing.BrowserMultiFormatReader(hints);
-    reader.decodeFromVideoElement(video, function(result, err){
-      frames++;
-      document.getElementById('frames').textContent = frames;
-      if(result && !detectado){
-        detectado = true;
-        var codigo = result.getText();
-        var formato = result.getBarcodeFormat ? result.getBarcodeFormat() : '';
-        setResultado('✓ ' + codigo);
-        setEstado('Formato: ' + formato + ' — toca Reiniciar para escanear otro');
-        beep();
-        if(navigator.vibrate) navigator.vibrate([100,50,200]);
-        document.getElementById('video').style.filter = 'brightness(1.5)';
-        setTimeout(function(){ document.getElementById('video').style.filter = ''; }, 500);
-      }
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints);
+    zxingReader.decodeFromVideoElement(video, function(result){
+      frameCount++;
+      document.getElementById('fc').textContent = frameCount;
+      if(result) onDetectado(result.getText(), result.getBarcodeFormat ? result.getBarcodeFormat().toString() : '');
     });
   }).catch(function(err){
-    setEstado('Error camara: ' + err.name + ' — ' + err.message);
+    setEstado('Error camara: '+err.name);
   });
 }
 
-iniciar();
+function toggleLib(){
+  // Detener lo que corra
+  try{ Quagga.stop(); }catch(e){}
+  try{ if(zxingReader) zxingReader.reset(); }catch(e){}
+  try{ if(streamActivo) streamActivo.getTracks().forEach(function(t){t.stop();}); }catch(e){}
+  frameCount=0; detectado=false;
+  document.getElementById('fc').textContent='0';
+  setResultado('Apunta al codigo de barras');
+
+  modoActual = modoActual==='quagga'?'zxing':'quagga';
+  if(modoActual==='quagga') iniciarQuagga();
+  else iniciarZXing();
+}
+
+// Iniciar con Quagga
+window.addEventListener('load', function(){
+  setTimeout(iniciarQuagga, 500);
+});
 </script>
 </body>
 </html>
