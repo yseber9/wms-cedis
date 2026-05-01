@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Scanner WMS</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;color:#fff;font-family:'Inter',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+@keyframes scanLine{0%{top:5%}50%{top:90%}100%{top:5%}}
+@keyframes flashOk{0%{opacity:0.8}100%{opacity:0}}
+
+.header{padding:12px 16px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.85);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+.titulo{font-size:14px;font-weight:700;flex:1}
+.badge{font-size:11px;background:rgba(79,70,229,0.6);padding:3px 10px;border-radius:20px;font-weight:600}
+.btn-cerrar{width:34px;height:34px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.video-wrap{flex:1;position:relative;overflow:hidden;background:#000}
+#video{width:100%;height:100%;object-fit:cover;display:block}
+
+.vignette{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to right,rgba(0,0,0,0.5) 0%,transparent 20%,transparent 80%,rgba(0,0,0,0.5) 100%),
+             linear-gradient(to bottom,rgba(0,0,0,0.5) 0%,transparent 18%,transparent 82%,rgba(0,0,0,0.5) 100%)}
+
+.visor{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.visor-box{position:relative;width:80%;max-width:320px;height:160px}
+.visor-box::before,.visor-box::after,.visor-box .c2::before,.visor-box .c2::after{
+  content:'';position:absolute;width:28px;height:28px;border-color:#4F46E5;border-style:solid}
+.visor-box::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.visor-box::after{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+.visor-box .c2::before{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+.visor-box .c2::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+
+.laser{position:absolute;left:4px;right:4px;height:2px;top:5%;
+  background:linear-gradient(90deg,transparent,#ff0000,#ff4444,#ff0000,transparent);
+  box-shadow:0 0 8px 2px rgba(255,0,0,0.7);
+  animation:scanLine 1.8s ease-in-out infinite}
+
+.flash{display:none;position:absolute;inset:0;background:rgba(52,211,153,0.4);pointer-events:none}
+.flash.on{display:block;animation:flashOk 0.5s ease forwards}
+
+.estado-wrap{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;pointer-events:none}
+.estado-pill{background:rgba(0,0,0,0.75);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:5px 16px;font-size:12px;color:rgba(255,255,255,0.8);font-weight:500}
+
+.footer{padding:12px 16px 16px;background:rgba(0,0,0,0.9);border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+.hint{font-size:11px;color:rgba(255,255,255,0.35);text-align:center;margin-bottom:10px}
+.manual-row{display:flex;gap:8px}
+.manual-inp{flex:1;padding:12px 14px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:14px;outline:none;font-family:sans-serif;text-transform:uppercase;letter-spacing:1px}
+.manual-inp:focus{border-color:rgba(79,70,229,0.7)}
+.manual-inp::placeholder{color:rgba(255,255,255,0.25);text-transform:none;letter-spacing:0}
+.ok-btn{padding:12px 18px;background:#4F46E5;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="btn-cerrar" onclick="cancelar()">&#8249;</button>
+  <span class="titulo" id="titulo">Escanear</span>
+  <span class="badge" id="badge">-</span>
+</div>
+
+<div class="video-wrap" id="video-wrap">
+  <video id="video" playsinline autoplay muted></video>
+  <div class="vignette"></div>
+  <div class="visor"><div class="visor-box"><div class="c2"></div><div class="laser"></div></div></div>
+  <div class="flash" id="flash"></div>
+  <div class="estado-wrap"><div class="estado-pill" id="estado">Iniciando camara...</div></div>
+</div>
+
+<div class="footer">
+  <div class="hint">Centra el codigo en el recuadro · o escribe manualmente</div>
+  <div class="manual-row">
+    <input class="manual-inp" id="manual" type="text" placeholder="Escribe el codigo aqui" autocapitalize="characters" autocorrect="off"/>
+    <button class="ok-btn" onclick="confirmarManual()">OK</button>
+  </div>
+</div>
+
+<script>
+// Leer parametros de la URL
+var params  = new URLSearchParams(window.location.search);
+var campo   = params.get('campo') || 'hu';
+var origen  = params.get('origen') || '*';
+var labels  = {hu:'HU', ov:'OV', sku:'SKU', buscar:'HU / SKU', ubi:'Ubicacion'};
+var lbl     = labels[campo] || campo.toUpperCase();
+
+document.getElementById('badge').textContent  = lbl;
+document.getElementById('titulo').textContent = 'Escanear ' + lbl;
+
+var detectado   = false;
+var streamActivo = null;
+var detector    = null;
+var animFrame   = null;
+
+function setEstado(t){ document.getElementById('estado').textContent = t; }
+
+// ── AUDIO ─────────────────────────────────────────────────────────
+function beepExito(){
+  try{
+    var AC = window.AudioContext || window.webkitAudioContext;
+    var ctx = new AC();
+    // Tono doble ascendente — like a real scanner
+    [[1047,0],[1319,160],[1760,320]].forEach(function(par){
+      var freq = par[0], delay = par[1];
+      setTimeout(function(){
+        var o=ctx.createOscillator(), g=ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value=freq; o.type='sine';
+        g.gain.setValueAtTime(0.5, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.18);
+        o.start(); o.stop(ctx.currentTime+0.18);
+      }, delay);
+    });
+  }catch(e){}
+}
+
+// ── ENVIAR RESULTADO ──────────────────────────────────────────────
+function enviarCodigo(codigo){
+  if(detectado) return;
+  detectado = true;
+  codigo = String(codigo).trim().toUpperCase();
+
+  // Flash verde
+  var f = document.getElementById('flash');
+  f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+
+  // Beep + vibración
+  beepExito();
+  if(navigator.vibrate) navigator.vibrate([80,40,120]);
+
+  setEstado('✓ Detectado: ' + codigo);
+
+  // Enviar al padre (iframe parent o window.opener)
+  var msg = { tipo:'scan_resultado', campo:campo, codigo:codigo };
+  setTimeout(function(){
+    try{ window.parent.postMessage(msg, '*'); }catch(e){}
+    try{ if(window.opener) window.opener.postMessage(msg, '*'); }catch(e){}
+    // Si corremos solos (prueba directa), mostrar el codigo
+  }, 400);
+}
+
+function cancelar(){
+  detener();
+  var msg = { tipo:'scan_cancelado', campo:campo };
+  try{ window.parent.postMessage(msg, '*'); }catch(e){}
+  try{ if(window.opener) window.opener.postMessage(msg, '*'); }catch(e){}
+}
+
+function confirmarManual(){
+  var v = document.getElementById('manual').value.trim();
+  if(!v) return;
+  detener();
+  enviarCodigo(v);
+}
+
+document.getElementById('manual').addEventListener('keydown', function(e){
+  if(e.key==='Enter') confirmarManual();
+});
+
+// ── DETENER ───────────────────────────────────────────────────────
+function detener(){
+  if(animFrame){ cancelAnimationFrame(animFrame); animFrame=null; }
+  if(streamActivo){ streamActivo.getTracks().forEach(function(t){t.stop();}); streamActivo=null; }
+  document.getElementById('video').srcObject = null;
+}
+
+// ── INICIAR ───────────────────────────────────────────────────────
+async function iniciar(){
+  // Preferir BarcodeDetector nativo (Chrome Android)
+  if('BarcodeDetector' in window){
+    try{
+      var formatos = await BarcodeDetector.getSupportedFormats();
+      detector = new BarcodeDetector({ formats: formatos });
+      setEstado('Centra el codigo en el recuadro');
+      await iniciarCamara(true);
+      return;
+    }catch(e){}
+  }
+  // Fallback: ZXing
+  setEstado('Cargando libreria...');
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js';
+  s.onload = function(){ iniciarZXing(); };
+  document.head.appendChild(s);
+}
+
+async function iniciarCamara(usarNativo){
+  try{
+    var stream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:'environment'},
+        width:{ideal:1920}, height:{ideal:1080}
+      }
+    });
+    streamActivo = stream;
+    var video = document.getElementById('video');
+    video.srcObject = stream;
+    await video.play();
+
+    if(usarNativo){
+      loopNativo(video);
+    }
+  }catch(err){
+    setEstado('Error camara: ' + err.name);
+  }
+}
+
+// Loop con BarcodeDetector nativo
+async function loopNativo(video){
+  if(detectado || !video.videoWidth){
+    if(!detectado) animFrame = requestAnimationFrame(function(){ loopNativo(video); });
+    return;
+  }
+  try{
+    var barcodes = await detector.detect(video);
+    if(barcodes && barcodes.length > 0){
+      detener();
+      enviarCodigo(barcodes[0].rawValue);
+      return;
+    }
+  }catch(e){}
+  if(!detectado) animFrame = requestAnimationFrame(function(){ loopNativo(video); });
+}
+
+// ZXing fallback
+function iniciarZXing(){
+  setEstado('Iniciando camara...');
+  navigator.mediaDevices.getUserMedia({
+    video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}
+  }).then(function(stream){
+    streamActivo = stream;
+    var video = document.getElementById('video');
+    video.srcObject = stream;
+    video.play();
+    setEstado('Centra el codigo en el recuadro');
+    var hints = new Map();
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    var reader = new ZXing.BrowserMultiFormatReader(hints);
+    reader.decodeFromVideoElement(video, function(result){
+      if(result && !detectado){
+        detener();
+        enviarCodigo(result.getText());
+      }
+    });
+  }).catch(function(err){
+    setEstado('Error: ' + err.name);
+  });
+}
+
+iniciar();
+</script>
+</body>
+</html>
