@@ -6,188 +6,218 @@
 <title>Scanner Test</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#1a1a2e;color:#fff;font-family:sans-serif;min-height:100vh;padding:20px;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center}
-h2{font-size:18px;text-align:center;color:#818CF8}
-.card{background:#16213e;border:1px solid #0f3460;border-radius:16px;padding:20px;width:100%;max-width:400px}
-.card-title{font-size:12px;color:#818CF8;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;font-weight:700}
-#preview{width:100%;border-radius:8px;display:none;margin-bottom:12px}
-#canvas{display:none}
-.btn{width:100%;padding:16px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px}
-.btn-cam{background:#4F46E5;color:#fff}
-.btn-file{background:#0f3460;color:#818CF8;border:1px solid #818CF8}
-.btn-scan{background:#059669;color:#fff}
-.btn-scan:disabled{background:#333;color:#666;cursor:not-allowed}
-#resultado{font-size:20px;font-weight:800;color:#4ade80;text-align:center;padding:16px;word-break:break-all;min-height:30px}
-#estado{font-size:13px;color:#aaa;text-align:center;min-height:20px}
-#formato{font-size:11px;color:#555;text-align:center;margin-top:4px}
+body{background:#0f172a;color:#fff;font-family:sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.video-wrap{flex:1;position:relative;overflow:hidden;background:#000}
+#video{width:100%;height:100%;object-fit:cover;display:block}
+@keyframes scan{0%{top:5%}50%{top:90%}100%{top:5%}}
+.laser{position:absolute;left:5%;right:5%;height:3px;background:#ff0000;box-shadow:0 0 12px #ff0000;animation:scan 1.5s ease-in-out infinite}
+.visor{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.box{position:relative;width:85%;max-width:360px;height:170px;border:2px solid rgba(255,255,0,0.5);border-radius:4px}
+.footer{padding:16px;background:#1e293b;flex-shrink:0}
+#resultado{font-size:22px;font-weight:800;color:#4ade80;text-align:center;padding:10px;word-break:break-all;min-height:36px}
+#estado{font-size:12px;color:#94a3b8;text-align:center;margin-bottom:10px}
+#soporte{font-size:11px;color:#64748b;text-align:center;margin-bottom:10px}
+.btns{display:flex;gap:8px}
+.btn{flex:1;padding:13px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-ok{background:#4F46E5;color:#fff}
+.btn-foto{background:#0f3460;color:#818CF8;border:1px solid #818CF8}
 input[type=file]{display:none}
-.hint{font-size:11px;color:#555;text-align:center;line-height:1.6;margin-top:8px}
 </style>
 </head>
 <body>
 
-<h2>📷 Scanner de Prueba</h2>
-
-<div class="card">
-  <div class="card-title">Captura o sube imagen</div>
-  <img id="preview" alt="preview"/>
-  <canvas id="canvas"></canvas>
-  
-  <!-- Opción 1: Cámara nativa -->
-  <label>
-    <input type="file" id="file-cam" accept="image/*" capture="environment" onchange="procesarImagen(this)"/>
-    <div class="btn btn-cam">📷 Abrir Cámara y Fotografiar</div>
-  </label>
-  
-  <!-- Opción 2: Archivo -->
-  <label>
-    <input type="file" id="file-upload" accept="image/*" onchange="procesarImagen(this)"/>
-    <div class="btn btn-file">🖼️ Elegir imagen del dispositivo</div>
-  </label>
-
-  <div id="estado">Toca un botón para empezar</div>
-  <div id="formato"></div>
+<div class="video-wrap">
+  <video id="video" playsinline autoplay muted></video>
+  <div class="visor"><div class="box"><div class="laser"></div></div></div>
 </div>
 
-<div class="card">
-  <div class="card-title">Resultado</div>
-  <div id="resultado">—</div>
-  <div class="hint">
-    Toma la foto de cerca, bien iluminada.<br>
-    El código debe ocupar la mayor parte de la imagen.
+<div class="footer">
+  <div id="resultado">Apunta al código</div>
+  <div id="estado">Iniciando...</div>
+  <div id="soporte"></div>
+  <div class="btns">
+    <button class="btn btn-ok" onclick="location.reload()">🔄 Reiniciar</button>
+    <label class="btn btn-foto">
+      📸 Foto
+      <input type="file" accept="image/*" capture="environment" onchange="analizarFoto(this)"/>
+    </label>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
-
 <script>
+var detector = null;
+var streamActivo = null;
+var escaneando = true;
+var canvas = document.createElement('canvas');
+var ctx = canvas.getContext('2d');
+
 function setEstado(t){ document.getElementById('estado').textContent = t; }
+function setSoporte(t){ document.getElementById('soporte').textContent = t; }
 function setResultado(t){ document.getElementById('resultado').textContent = t; }
-function setFormato(t){ document.getElementById('formato').textContent = t; }
 
 function beep(){
   try{
-    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    var ac=new(window.AudioContext||window.webkitAudioContext)();
     [1047,1319].forEach(function(f,i){
       setTimeout(function(){
-        var o=ctx.createOscillator(),g=ctx.createGain();
-        o.connect(g);g.connect(ctx.destination);
-        o.frequency.value=f;g.gain.setValueAtTime(0.5,ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
-        o.start();o.stop(ctx.currentTime+0.3);
+        var o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);
+        o.frequency.value=f;g.gain.setValueAtTime(0.5,ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.25);
+        o.start();o.stop(ac.currentTime+0.25);
       },i*160);
     });
   }catch(e){}
 }
 
-function procesarImagen(input){
-  if(!input.files||!input.files[0]) return;
-  var file = input.files[0];
-  input.value = '';
-
-  setEstado('Procesando imagen...');
-  setResultado('—');
-  setFormato('');
-
-  var reader = new FileReader();
-  reader.onload = function(ev){
-    var src = ev.target.result;
-
-    // Mostrar preview
-    var prev = document.getElementById('preview');
-    prev.src = src;
-    prev.style.display = 'block';
-
-    // Intentar con Quagga primero
-    intentarQuagga(src, function(codigo, formato){
-      if(codigo){
-        mostrarExito(codigo, 'QuaggaJS — ' + formato);
-      } else {
-        // Si Quagga falla, intentar ZXing
-        intentarZXing(src, function(codigo2, formato2){
-          if(codigo2){
-            mostrarExito(codigo2, 'ZXing — ' + formato2);
-          } else {
-            // Último intento: rotar imagen y probar de nuevo
-            intentarRotado(src, function(codigo3, formato3){
-              if(codigo3){
-                mostrarExito(codigo3, 'ZXing rotado — ' + formato3);
-              } else {
-                setEstado('No se detectó código. Intenta más cerca o mejor iluminado.');
-                setResultado('❌ No detectado');
-              }
-            });
-          }
-        });
-      }
-    });
-  };
-  reader.readAsDataURL(file);
-}
-
-function intentarQuagga(src, cb){
-  setEstado('Analizando con QuaggaJS...');
-  try{
-    Quagga.decodeSingle({
-      decoder:{
-        readers:[
-          'code_128_reader','ean_reader','ean_8_reader',
-          'code_39_reader','upc_reader','upc_e_reader',
-          'codabar_reader','i2of5_reader','2of5_reader','code_93_reader'
-        ]
-      },
-      locate: true,
-      src: src
-    }, function(result){
-      if(result && result.codeResult && result.codeResult.code){
-        cb(result.codeResult.code, result.codeResult.format);
-      } else {
-        cb(null, null);
-      }
-    });
-  }catch(e){ cb(null, null); }
-}
-
-function intentarZXing(src, cb){
-  setEstado('Analizando con ZXing...');
-  if(typeof ZXing === 'undefined'){ cb(null,null); return; }
-  try{
-    var hints = new Map();
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    var reader = new ZXing.BrowserMultiFormatReader(hints);
-    reader.decodeFromImageUrl(src)
-      .then(function(result){ cb(result.getText(), result.getBarcodeFormat ? result.getBarcodeFormat().toString() : ''); })
-      .catch(function(){ cb(null, null); });
-  }catch(e){ cb(null,null); }
-}
-
-function intentarRotado(src, cb){
-  setEstado('Intentando con imagen rotada 90°...');
-  // Rotar la imagen en canvas y reintentar
-  var img = new Image();
-  img.onload = function(){
-    var canvas = document.getElementById('canvas');
-    // Rotar 90 grados
-    canvas.width = img.height;
-    canvas.height = img.width;
-    var ctx = canvas.getContext('2d');
-    ctx.translate(canvas.width/2, canvas.height/2);
-    ctx.rotate(Math.PI/2);
-    ctx.drawImage(img, -img.width/2, -img.height/2);
-    var srcRotado = canvas.toDataURL('image/jpeg', 0.95);
-    intentarZXing(srcRotado, cb);
-  };
-  img.src = src;
-}
-
-function mostrarExito(codigo, info){
+function onDetectado(codigo, formato){
+  if(!escaneando) return;
+  escaneando = false;
   setResultado('✓ ' + codigo);
-  setFormato('Detectado con: ' + info);
-  setEstado('¡Código leído correctamente!');
+  setEstado('Formato: ' + formato);
   beep();
   if(navigator.vibrate) navigator.vibrate([100,50,200]);
 }
+
+// ── BARCODE DETECTOR API (nativa Chrome) ─────────────────────────
+async function iniciarBarcodeDetector(){
+  if(!('BarcodeDetector' in window)){
+    setSoporte('⚠️ BarcodeDetector no disponible — usando ZXing');
+    iniciarZXing();
+    return;
+  }
+
+  try{
+    var formatos = await BarcodeDetector.getSupportedFormats();
+    setSoporte('✅ BarcodeDetector nativo | Formatos: ' + formatos.length);
+    detector = new BarcodeDetector({ formats: formatos });
+    setEstado('Cámara activa — centra el código');
+  }catch(e){
+    setSoporte('Error BarcodeDetector: ' + e.message);
+    iniciarZXing();
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({
+    video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:1920},
+      height:{ideal:1080}
+    }
+  }).then(function(stream){
+    streamActivo = stream;
+    var video = document.getElementById('video');
+    video.srcObject = stream;
+    video.play();
+    video.addEventListener('loadedmetadata', function(){
+      loopDetectar(video);
+    });
+  }).catch(function(err){
+    setEstado('Error cámara: ' + err.name);
+    iniciarZXing();
+  });
+}
+
+async function loopDetectar(video){
+  if(!escaneando) return;
+  if(!video.videoWidth){
+    setTimeout(function(){ loopDetectar(video); }, 200);
+    return;
+  }
+  try{
+    var barcodes = await detector.detect(video);
+    if(barcodes && barcodes.length > 0){
+      onDetectado(barcodes[0].rawValue, barcodes[0].format);
+      return;
+    }
+  }catch(e){}
+  if(escaneando) requestAnimationFrame(function(){ loopDetectar(video); });
+}
+
+// ── ZXING FALLBACK ────────────────────────────────────────────────
+function iniciarZXing(){
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js';
+  s.onload = function(){
+    setEstado('ZXing listo — centra el código');
+    navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}
+    }).then(function(stream){
+      streamActivo = stream;
+      var video = document.getElementById('video');
+      video.srcObject = stream;
+      video.play();
+      var hints = new Map();
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      var reader = new ZXing.BrowserMultiFormatReader(hints);
+      reader.decodeFromVideoElement(video, function(result){
+        if(result) onDetectado(result.getText(), 'ZXing');
+      });
+    }).catch(function(err){ setEstado('Error cámara: '+err.name); });
+  };
+  document.head.appendChild(s);
+}
+
+// ── ANALIZAR FOTO ─────────────────────────────────────────────────
+async function analizarFoto(input){
+  if(!input.files||!input.files[0]) return;
+  var file = input.files[0];
+  input.value = '';
+  escaneando = true;
+  setResultado('Analizando...');
+  setEstado('Procesando foto...');
+
+  var img = new Image();
+  var url = URL.createObjectURL(file);
+  img.onload = async function(){
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+
+    // Intentar con BarcodeDetector
+    if(detector){
+      try{
+        var barcodes = await detector.detect(canvas);
+        if(barcodes && barcodes.length > 0){
+          onDetectado(barcodes[0].rawValue, barcodes[0].format + ' (foto)');
+          return;
+        }
+      }catch(e){}
+    }
+
+    // Si no, intentar imagen rotada
+    var intentos = [0, 90, 270, 180];
+    for(var i=0; i<intentos.length; i++){
+      var grados = intentos[i];
+      if(grados !== 0){
+        canvas.width = img.height;
+        canvas.height = img.width;
+        ctx.save();
+        ctx.translate(canvas.width/2, canvas.height/2);
+        ctx.rotate(grados * Math.PI/180);
+        ctx.drawImage(img, -img.width/2, -img.height/2);
+        ctx.restore();
+      }
+      if(detector){
+        try{
+          var res = await detector.detect(canvas);
+          if(res && res.length > 0){
+            onDetectado(res[0].rawValue, res[0].format + ' (foto rot.'+grados+'°)');
+            return;
+          }
+        }catch(e){}
+      }
+    }
+    setResultado('❌ No detectado');
+    setEstado('Intenta más cerca con mejor luz');
+    escaneando = true;
+  };
+  img.src = url;
+}
+
+// Arrancar
+iniciarBarcodeDetector();
 </script>
 </body>
 </html>
