@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liverpool BT OMS — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  --bg:#07080F;--surface:#0D0F1C;--surface2:#131627;--surface3:#1A1E35;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --pink:#E91E8C;--pink-dim:rgba(233,30,140,0.12);--pink-glow:rgba(233,30,140,0.3);
+  --cyan:#00D4FF;--cyan-dim:rgba(0,212,255,0.10);
+  --green:#00E5A0;--green-dim:rgba(0,229,160,0.10);
+  --amber:#FFB800;--amber-dim:rgba(255,184,0,0.10);
+  --red:#FF3B5C;--red-dim:rgba(255,59,92,0.10);
+  --purple:#B57BFF;--purple-dim:rgba(181,123,255,0.10);
+  --text:#F0F2FF;--text2:#8B92B8;--text3:#4A5080;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* HEADER */
+.header{position:sticky;top:0;z-index:100;background:rgba(7,8,15,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;height:60px;gap:20px}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-weight:800;font-size:15px}
+.logo-mark{width:30px;height:30px;background:var(--pink);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;box-shadow:0 0 16px var(--pink-glow)}
+.logo span{color:var(--pink)}
+.hdr-div{width:1px;height:20px;background:var(--border2)}
+.hdr-title{font-size:12px;color:var(--text2);font-weight:500}
+.hdr-space{flex:1}
+.hdr-badge{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px}
+.hdr-badge span{color:var(--cyan)}
+.btn{padding:8px 16px;border-radius:7px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:hover{border-color:var(--pink);color:var(--pink)}
+.btn-pink{background:var(--pink);color:#fff;box-shadow:0 4px 16px var(--pink-glow)}
+.btn-pink:hover{transform:translateY(-1px)}
+
+/* MAIN */
+.main{padding:24px 28px;max-width:1500px;margin:0 auto}
+
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border2);border-radius:14px;padding:32px;text-align:center;cursor:pointer;transition:all 0.3s;background:var(--surface);margin-bottom:24px;position:relative;overflow:hidden}
+.upload-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,var(--pink-dim),transparent 70%);opacity:0;transition:opacity 0.3s}
+.upload-zone:hover::before,.upload-zone.drag-over::before{opacity:1}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--pink);transform:translateY(-2px)}
+.upload-icon{font-size:40px;margin-bottom:10px;display:block}
+.upload-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px}
+.upload-sub{font-size:12px;color:var(--text2)}
+.upload-sub span{color:var(--pink);font-weight:600}
+#file-input{display:none}
+.prog-bar{display:none;height:3px;background:var(--surface3);border-radius:2px;margin-top:16px;overflow:hidden}
+.prog-fill{height:100%;width:0;background:linear-gradient(90deg,var(--pink),var(--cyan));transition:width 0.3s}
+
+/* SECTION LABEL */
+.sec-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;transition:transform 0.2s}
+.kpi:hover{transform:translateY(-2px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.c-pink::before{background:linear-gradient(90deg,var(--pink),transparent)}
+.kpi.c-cyan::before{background:linear-gradient(90deg,var(--cyan),transparent)}
+.kpi.c-green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.kpi.c-amber::before{background:linear-gradient(90deg,var(--amber),transparent)}
+.kpi.c-red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.kpi.c-purple::before{background:linear-gradient(90deg,var(--purple),transparent)}
+.kpi-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:8px}
+.kpi-val{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:6px}
+.kpi.c-pink .kpi-val{color:var(--pink)}
+.kpi.c-cyan .kpi-val{color:var(--cyan)}
+.kpi.c-green .kpi-val{color:var(--green)}
+.kpi.c-amber .kpi-val{color:var(--amber)}
+.kpi.c-red .kpi-val{color:var(--red)}
+.kpi.c-purple .kpi-val{color:var(--purple)}
+.kpi-delta{font-family:'JetBrains Mono',monospace;font-size:11px}
+.kpi-delta.up{color:var(--green)}.kpi-delta.dn{color:var(--red)}.kpi-delta.neu{color:var(--text3)}
+.kpi-sub{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* YEAR PILLS */
+.year-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.year-pill{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 16px;text-align:center;min-width:100px}
+.year-pill-yr{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.year-pill-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--amber);margin-top:2px}
+
+/* CHARTS */
+.charts-2{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:16px}
+.charts-2-eq{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:2px}
+.chart-sub{font-size:11px;color:var(--text2);margin-bottom:16px}
+.chart-wrap{position:relative;height:220px}
+
+/* STATUS DETAIL */
+.status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:24px}
+.status-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.status-name{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.status-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
+.status-pct{font-size:10px;color:var(--text3)}
+
+/* TABLE */
+.tbl-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px}
+.tbl-hdr{padding:16px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.tbl-hdr-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;flex:1}
+.tbl-scroll{overflow:auto;max-height:320px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead tr{background:var(--surface2);position:sticky;top:0;z-index:5}
+th{padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid var(--border);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:11px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+
+/* BADGES */
+.bdg{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.bdg-red{background:var(--red-dim);color:var(--red)}
+.bdg-amber{background:var(--amber-dim);color:var(--amber)}
+.bdg-green{background:var(--green-dim);color:var(--green)}
+.bdg-cyan{background:var(--cyan-dim);color:var(--cyan)}
+.bdg-pink{background:var(--pink-dim);color:var(--pink)}
+.bdg-purple{background:var(--purple-dim);color:var(--purple)}
+
+/* SECTION BOX */
+.section-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px}
+.section-box-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.section-box-sub{font-size:12px;color:var(--text2);margin-bottom:20px}
+
+/* HISTORIAL */
+.hist-row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-fecha{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--pink);min-width:90px;font-weight:600}
+.hist-bar-wrap{flex:1;display:flex;gap:6px;align-items:center}
+.hist-bar-bg{flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.hist-bar-fill{height:100%;border-radius:3px;transition:width 0.5s}
+.hist-val{font-family:'JetBrains Mono',monospace;font-size:11px;min-width:50px;text-align:right}
+.hist-delta{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:60px;text-align:right}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.4);transform:translateY(80px);opacity:0;transition:all 0.3s;z-index:999;display:flex;align-items:center;gap:8px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:var(--green);color:var(--green)}
+.toast.err{border-color:var(--red);color:var(--red)}
+
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px;color:var(--text3)}
+.empty .ico{font-size:44px;margin-bottom:10px;display:block;opacity:0.4}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content}
+.tab{padding:8px 20px;border-radius:7px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:var(--text3);transition:all 0.2s;border:none;background:transparent}
+.tab.active{background:var(--surface3);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+
+@media(max-width:900px){.charts-2,.charts-2-eq{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(2,1fr)}.main{padding:14px}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.kpi{animation:fadeUp 0.35s ease both}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo"><div class="logo-mark">L</div>Liverpool BT <span>OMS</span></div>
+  <div class="hdr-div"></div>
+  <div class="hdr-title">Seguimiento Zona Norte 0185</div>
+  <div class="hdr-space"></div>
+  <div class="hdr-badge" id="hdr-fecha">Sin datos · <span>carga el CSV</span></div>
+  <button class="btn btn-ghost" style="margin-left:8px" onclick="exportarHoy()">⬇ Exportar día</button>
+  <button class="btn btn-ghost" onclick="exportarHistorial()">📊 Historial</button>
+  <button class="btn btn-pink" onclick="document.getElementById('file-input').click()">📂 Cargar CSV</button>
+</header>
+
+<main class="main">
+
+  <!-- UPLOAD -->
+  <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+    <span class="upload-icon">📂</span>
+    <div class="upload-title">Cargar reporte del día</div>
+    <div class="upload-sub">Arrastra el CSV de Liverpool OMS · o <span>haz click aquí</span></div>
+    <div class="upload-sub" style="margin-top:4px;font-size:11px;color:var(--text3)">Pestaña: Cumplimiento x Fecha de Emisión · Filtro: 0185 BT CR Zona Norte</div>
+    <div class="prog-bar" id="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+  </div>
+  <input type="file" id="file-input" accept=".csv" onchange="cargarCSV(this)"/>
+
+  <div id="dashboard-content" style="display:none">
+
+    <!-- ══ RESUMEN GENERAL ══ -->
+    <div class="sec-label">Resumen general del día</div>
+    <div class="kpi-row" id="kpi-general"></div>
+
+    <!-- ══ SECCIÓN 1: FEE VENCIDA ══ -->
+    <div class="section-box">
+      <div class="section-box-title">
+        🔴 Sección 1 — Pendientes con FEE Vencida
+        <span class="bdg bdg-red" id="s1-total-bdg">0</span>
+      </div>
+      <div class="section-box-sub">Estatus = PENDIENTE · Cumplimiento FEE homologado pendientes = Vencida</div>
+
+      <!-- KPIs S1 -->
+      <div class="kpi-row" id="kpi-s1"></div>
+
+      <!-- Años -->
+      <div class="sec-label">Vencidas por año de emisión</div>
+      <div class="year-pills" id="years-s1"></div>
+
+      <!-- Gráfica principal: En locación de entrega diario -->
+      <div class="charts-2">
+        <div class="chart-card">
+          <div class="chart-title">📍 En Locación de Entrega — Tendencia diaria</div>
+          <div class="chart-sub">Solo órdenes que ya están en el CEDIS listas para entregar</div>
+          <div class="chart-wrap"><canvas id="chart-s1-entrega"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Distribución por Estatus SO</div>
+          <div class="chart-sub">Proporción hoy</div>
+          <div class="chart-wrap"><canvas id="chart-s1-donut"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Detalle status SO -->
+      <div class="sec-label">Detalle por Estatus SO</div>
+      <div class="status-grid" id="status-s1"></div>
+
+      <!-- Tabla detalle -->
+      <details>
+        <summary style="cursor:pointer;font-size:12px;color:var(--text2);padding:8px 0;font-family:'Syne',sans-serif;font-weight:700">Ver detalle de órdenes vencidas FEE ▼</summary>
+        <div class="tbl-card" style="margin-top:12px">
+          <div class="tbl-scroll">
+            <table id="tabla-s1">
+              <thead><tr>
+                <th>Fecha Emisión</th><th>Año</th><th>Línea SO-SKU-SHIP</th><th>SKU</th>
+                <th>Fecha Promesa</th><th>Estatus SO</th><th>FEE Pendiente</th><th>Importe</th>
+              </tr></thead>
+              <tbody id="tbody-s1"></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- ══ SECCIÓN 2: FECHA PROMESA VENCIDA ══ -->
+    <div class="section-box">
+      <div class="section-box-title">
+        🟡 Sección 2 — Pendientes con Fecha Promesa Vencida
+        <span class="bdg bdg-amber" id="s2-total-bdg">0</span>
+      </div>
+      <div class="section-box-sub">Estatus = PENDIENTE · Fecha Promesa Actualizada &lt; hoy</div>
+
+      <!-- KPIs S2 -->
+      <div class="kpi-row" id="kpi-s2"></div>
+
+      <!-- Años -->
+      <div class="sec-label">Vencidas por año de emisión</div>
+      <div class="year-pills" id="years-s2"></div>
+
+      <!-- Gráficas por fecha -->
+      <div class="charts-2-eq">
+        <div class="chart-card">
+          <div class="chart-title">📅 Por Fecha de Emisión</div>
+          <div class="chart-sub">Cuándo se vendió cada orden vencida</div>
+          <div class="chart-wrap"><canvas id="chart-s2-emision"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">🗓 Por Fecha Promesa Actualizada</div>
+          <div class="chart-sub">Cuándo prometimos entregar</div>
+          <div class="chart-wrap"><canvas id="chart-s2-promesa"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Gráfica En locación de entrega -->
+      <div class="charts-2" style="margin-top:14px">
+        <div class="chart-card">
+          <div class="chart-title">📍 En Locación de Entrega — Tendencia diaria</div>
+          <div class="chart-sub">Órdenes con promesa vencida que ya están en el CEDIS</div>
+          <div class="chart-wrap"><canvas id="chart-s2-entrega"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Distribución por Estatus SO</div>
+          <div class="chart-sub">Proporción hoy</div>
+          <div class="chart-wrap"><canvas id="chart-s2-donut"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Detalle status SO -->
+      <div class="sec-label">Detalle por Estatus SO</div>
+      <div class="status-grid" id="status-s2"></div>
+
+      <!-- Tabla -->
+      <details>
+        <summary style="cursor:pointer;font-size:12px;color:var(--text2);padding:8px 0;font-family:'Syne',sans-serif;font-weight:700">Ver detalle de órdenes con promesa vencida ▼</summary>
+        <div class="tbl-card" style="margin-top:12px">
+          <div class="tbl-scroll">
+            <table id="tabla-s2">
+              <thead><tr>
+                <th>Fecha Emisión</th><th>Año</th><th>Línea SO-SKU-SHIP</th><th>SKU</th>
+                <th>Fecha Promesa</th><th>Días Vencida</th><th>Estatus SO</th><th>Importe</th>
+              </tr></thead>
+              <tbody id="tbody-s2"></tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- ══ HISTORIAL ══ -->
+    <div class="sec-label">Historial diario — En Locación de Entrega</div>
+    <div class="charts-2">
+      <div class="chart-card">
+        <div class="chart-title">Tendencia histórica — FEE Vencidas en CEDIS</div>
+        <div class="chart-sub">Sección 1 · En locación de entrega día a día</div>
+        <div class="chart-wrap"><canvas id="chart-hist-s1"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Tendencia histórica — Promesa Vencida en CEDIS</div>
+        <div class="chart-sub">Sección 2 · En locación de entrega día a día</div>
+        <div class="chart-wrap"><canvas id="chart-hist-s2"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Tabla historial -->
+    <div class="tbl-card">
+      <div class="tbl-hdr">
+        <div class="tbl-hdr-title">📅 Registro diario de snapshots</div>
+        <span class="bdg bdg-cyan" id="hist-dias-bdg">0 días</span>
+        <button class="btn btn-ghost" style="margin-left:8px;padding:5px 12px;font-size:11px" onclick="limpiarHistorial()">🗑 Limpiar</button>
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr>
+            <th>Fecha</th>
+            <th>S1 Total</th><th>S1 CEDIS</th><th>S1 Transf.</th><th>S1 Sin Disp.</th>
+            <th>Δ S1</th>
+            <th>S2 Total</th><th>S2 CEDIS</th><th>S2 Transf.</th>
+            <th>Δ S2</th>
+            <th>%FEE</th>
+          </tr></thead>
+          <tbody id="tbody-hist"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /dashboard-content -->
+
+  <div class="empty" id="empty-state">
+    <span class="ico">📊</span>
+    <p style="font-size:14px;margin-bottom:6px">Carga el CSV del día para ver el dashboard</p>
+    <p style="font-size:12px">Descarga desde Liverpool OMS · Pestaña: Cumplimiento x Fecha de Emisión · Filtro 0185</p>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══ STORAGE ══ */
+var SK = 'oms_hist_v2';
+function getHist(){ try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];} }
+function saveHist(h){ try{localStorage.setItem(SK,JSON.stringify(h));}catch(e){} }
+
+/* ══ TOAST ══ */
+function toast(msg,tipo){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+(tipo||'');
+  setTimeout(function(){t.className='toast';},3000);
+}
+
+/* ══ DRAG DROP ══ */
+var zone=document.getElementById('upload-zone');
+zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('drag-over');});
+zone.addEventListener('dragleave',function(){zone.classList.remove('drag-over');});
+zone.addEventListener('drop',function(e){
+  e.preventDefault();zone.classList.remove('drag-over');
+  var f=e.dataTransfer.files[0]; if(f) procesarArchivo(f);
+});
+function cargarCSV(inp){ if(!inp.files||!inp.files[0])return; procesarArchivo(inp.files[0]); inp.value=''; }
+
+/* ══ PARSE ══ */
+function parseFecha(s){
+  if(!s||s==='-'||s.trim()==='') return null;
+  var ms={ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11};
+  var m=s.trim().match(/^(\d+)\s+(\w+)\s+(\d{4})$/);
+  if(m) return new Date(+m[3], ms[m[2].toLowerCase()]||0, +m[1]);
+  var d=new Date(s); return isNaN(d)?null:d;
+}
+function fmtFecha(d){ if(!d) return '-'; return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}); }
+function diasVenc(fp){ var h=new Date();h.setHours(0,0,0,0);fp.setHours(0,0,0,0); var d=Math.floor((h-fp)/864e5); return d>0?d:null; }
+function anio(s){ var d=parseFecha(s); return d?d.getFullYear():null; }
+
+/* ══ PROCESAR ══ */
+function procesarArchivo(file){
+  var bar=document.getElementById('prog-bar'), fill=document.getElementById('prog-fill');
+  bar.style.display='block'; fill.style.width='0%';
+  setTimeout(function(){fill.style.width='40%';},100);
+  Papa.parse(file,{
+    header:true, skipEmptyLines:true,
+    complete:function(r){
+      fill.style.width='80%';
+      setTimeout(function(){
+        fill.style.width='100%';
+        setTimeout(function(){ bar.style.display='none'; procesarDatos(r.data); },200);
+      },200);
+    },
+    error:function(e){ toast('Error: '+e.message,'err'); bar.style.display='none'; }
+  });
+}
+
+function procesarDatos(rows){
+  var hoyD=new Date(); hoyD.setHours(0,0,0,0);
+  var fechaStr=hoyD.toLocaleDateString('es-MX',{year:'numeric',month:'2-digit',day:'2-digit'});
+
+  // Filtrar solo 0185
+  var data=rows.filter(function(r){
+    var loc=r['Locación Seguimiento']||r['Locacion Seguimiento']||r['CR Entrega']||'';
+    return loc.indexOf('0185')>=0;
+  });
+  if(!data.length) data=rows; // si ya viene filtrado
+
+  var total=data.length;
+  var entregadas=data.filter(function(r){return (r.Estatus||'').trim().toUpperCase()==='ENTREGADO';}).length;
+  var pendientes=data.filter(function(r){return (r.Estatus||'').trim().toUpperCase()==='PENDIENTE';}).length;
+
+  // %FEE entregadas
+  var entRows=data.filter(function(r){return (r.Estatus||'').trim().toUpperCase()==='ENTREGADO';});
+  var feeOk=entRows.filter(function(r){
+    var f=(r['Cumplimiento FEE homologado entregadas']||'').trim().toLowerCase();
+    return f.indexOf('en fecha')>=0||f.indexOf('en tiempo')>=0;
+  }).length;
+  var feePct=entRows.length>0?Math.round((feeOk/entRows.length)*1000)/10:0;
+
+  // ── SECCIÓN 1: FEE Vencida ──
+  var s1Rows=data.filter(function(r){
+    if((r.Estatus||'').trim().toUpperCase()!=='PENDIENTE') return false;
+    var fee=(r['Cumplimiento FEE homologado pendientes']||'').trim().toLowerCase();
+    return fee.indexOf('vencida')>=0||fee==='vencida';
+  });
+
+  // ── SECCIÓN 2: Fecha Promesa Vencida ──
+  var s2Rows=data.filter(function(r){
+    if((r.Estatus||'').trim().toUpperCase()!=='PENDIENTE') return false;
+    var fp=parseFecha(r['Fecha Promesa Actualizada']||r['Fecha Homologada']||'');
+    if(!fp) return false;
+    fp.setHours(0,0,0,0);
+    return fp<hoyD;
+  });
+
+  // Agrupar por Estatus SO
+  function agruparSO(rows){
+    var g={};
+    rows.forEach(function(r){
+      var s=(r['Estatus SO']||r['Estatus Shipment']||'Desconocido').trim();
+      g[s]=(g[s]||0)+1;
+    });
+    return g;
+  }
+
+  // Por año
+  function porAnio(rows){
+    var g={};
+    rows.forEach(function(r){
+      var a=anio(r['Fecha Emisión']||r['Fecha Emision']||'');
+      if(a) g[a]=(g[a]||0)+1;
+    });
+    return g;
+  }
+
+  // En locación de entrega
+  function countEntrega(rows){
+    return rows.filter(function(r){
+      var s=(r['Estatus SO']||'').toLowerCase();
+      return s.indexOf('en locación de entrega')>=0||s.indexOf('en locacion de entrega')>=0;
+    }).length;
+  }
+  function countTransf(rows){
+    return rows.filter(function(r){
+      var s=(r['Estatus SO']||'').toLowerCase();
+      return s.indexOf('transferencia')>=0;
+    }).length;
+  }
+  function countSinDisp(rows){
+    return rows.filter(function(r){
+      var s=(r['Estatus SO']||'').toLowerCase();
+      return s.indexOf('sin disponibilidad')>=0;
+    }).length;
+  }
+
+  // Por fecha de emisión (agrupar por mes)
+  function porMesEmision(rows){
+    var g={};
+    rows.forEach(function(r){
+      var d=parseFecha(r['Fecha Emisión']||r['Fecha Emision']||'');
+      if(!d) return;
+      var k=d.toLocaleDateString('es-MX',{month:'short',year:'numeric'});
+      g[k]=(g[k]||0)+1;
+    });
+    return g;
+  }
+
+  // Por fecha promesa (agrupar por mes)
+  function porMesPromesa(rows){
+    var g={};
+    rows.forEach(function(r){
+      var d=parseFecha(r['Fecha Promesa Actualizada']||r['Fecha Homologada']||'');
+      if(!d) return;
+      var k=d.toLocaleDateString('es-MX',{month:'short',year:'numeric'});
+      g[k]=(g[k]||0)+1;
+    });
+    return g;
+  }
+
+  var snap={
+    fecha:fechaStr,
+    total:total, entregadas:entregadas, pendientes:pendientes, feePct:feePct,
+    s1:{
+      total:s1Rows.length,
+      entrega:countEntrega(s1Rows),
+      transf:countTransf(s1Rows),
+      sinDisp:countSinDisp(s1Rows),
+      so:agruparSO(s1Rows),
+      anios:porAnio(s1Rows),
+      detalle:s1Rows.slice(0,500).map(function(r){
+        return {
+          emision:r['Fecha Emisión']||r['Fecha Emision']||'-',
+          anio:anio(r['Fecha Emisión']||r['Fecha Emision']||'')||'-',
+          linea:(r['LINEA (SO-SKU-SHIP)']||'-').substring(0,35),
+          sku:(r['Descripción SKU']||r['Descripcion SKU']||'-').substring(0,35),
+          promesa:r['Fecha Promesa Actualizada']||'-',
+          so:(r['Estatus SO']||'-'),
+          fee:(r['Cumplimiento FEE homologado pendientes']||'-'),
+          importe:parseFloat(r['Importe Pagado'])||0
+        };
+      })
+    },
+    s2:{
+      total:s2Rows.length,
+      entrega:countEntrega(s2Rows),
+      transf:countTransf(s2Rows),
+      sinDisp:countSinDisp(s2Rows),
+      so:agruparSO(s2Rows),
+      anios:porAnio(s2Rows),
+      mesEmision:porMesEmision(s2Rows),
+      mesPromesa:porMesPromesa(s2Rows),
+      detalle:s2Rows.slice(0,500).map(function(r){
+        var fp=parseFecha(r['Fecha Promesa Actualizada']||r['Fecha Homologada']||'');
+        return {
+          emision:r['Fecha Emisión']||r['Fecha Emision']||'-',
+          anio:anio(r['Fecha Emisión']||r['Fecha Emision']||'')||'-',
+          linea:(r['LINEA (SO-SKU-SHIP)']||'-').substring(0,35),
+          sku:(r['Descripción SKU']||r['Descripcion SKU']||'-').substring(0,35),
+          promesa:r['Fecha Promesa Actualizada']||'-',
+          dias:fp?diasVenc(fp):'-',
+          so:(r['Estatus SO']||'-'),
+          importe:parseFloat(r['Importe Pagado'])||0
+        };
+      })
+    }
+  };
+
+  var hist=getHist();
+  var idx=hist.findIndex(function(h){return h.fecha===fechaStr;});
+  if(idx>=0) hist[idx]=snap; else hist.unshift(snap);
+  if(hist.length>90) hist=hist.slice(0,90);
+  saveHist(hist);
+
+  renderDashboard(hist);
+  toast('✓ '+total.toLocaleString()+' líneas procesadas · S1:'+snap.s1.total+' · S2:'+snap.s2.total,'ok');
+}
+
+/* ══ RENDER ══ */
+var charts={};
+function destroyChart(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+
+var CHART_OPTS={
+  responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:'#8B92B8',font:{family:'JetBrains Mono',size:10}}}},
+  scales:{
+    x:{ticks:{color:'#4A5080',font:{size:9},maxRotation:45},grid:{color:'rgba(255,255,255,0.03)'}},
+    y:{ticks:{color:'#4A5080',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'},beginAtZero:true}
+  }
+};
+
+function mkChart(id,type,data,opts){
+  destroyChart(id);
+  charts[id]=new Chart(document.getElementById(id),{type:type,data:data,options:opts||CHART_OPTS});
+}
+
+function delta(a,b,inv){
+  if(b===undefined||b===null) return {t:'—',c:'neu'};
+  var d=a-b;
+  if(d===0) return {t:'=',c:'neu'};
+  var inv2=inv?{1:'dn',2:'up'}:{1:'up',2:'dn'};
+  return {t:(d>0?'↑+':'↓')+Math.abs(d),c:d>0?inv2[1]:inv2[2]};
+}
+
+function renderDashboard(hist){
+  if(!hist.length) return;
+  var hoy=hist[0], ayer=hist.length>1?hist[1]:null;
+
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('dashboard-content').style.display='block';
+  document.getElementById('upload-zone').style.display='none';
+
+  document.getElementById('hdr-fecha').innerHTML='Última carga: <span>'+hoy.fecha+'</span>';
+
+  // ── KPIs GENERALES ──
+  var dEntr=ayer?delta(hoy.entregadas,ayer.entregadas,false):{t:'—',c:'neu'};
+  var dPend=ayer?delta(hoy.pendientes,ayer.pendientes,true):{t:'—',c:'neu'};
+  var dFee=ayer?delta(hoy.feePct,ayer.feePct,false):{t:'—',c:'neu'};
+  document.getElementById('kpi-general').innerHTML=[
+    {c:'c-pink',l:'Total Líneas',v:hoy.total.toLocaleString(),d:{t:'—',c:'neu'},s:'SO-SKU-SHIP'},
+    {c:'c-green',l:'Entregadas',v:hoy.entregadas.toLocaleString(),d:dEntr,s:'Completadas'},
+    {c:'c-amber',l:'Pendientes',v:hoy.pendientes.toLocaleString(),d:dPend,s:'En proceso'},
+    {c:'c-cyan',l:'%FEE Homologado',v:hoy.feePct+'%',d:{t:dFee.t+'%',c:dFee.c},s:'Cumplimiento'},
+    {c:'c-red',l:'FEE Vencidas (S1)',v:hoy.s1.total.toLocaleString(),d:ayer?delta(hoy.s1.total,ayer.s1.total,true):{t:'—',c:'neu'},s:'Pendientes vencidas'},
+    {c:'c-purple',l:'Promesa Vencida (S2)',v:hoy.s2.total.toLocaleString(),d:ayer?delta(hoy.s2.total,ayer.s2.total,true):{t:'—',c:'neu'},s:'Fecha pasada'}
+  ].map(function(k,i){
+    return '<div class="kpi '+k.c+'" style="animation-delay:'+(i*0.05)+'s">'
+      +'<div class="kpi-lbl">'+k.l+'</div>'
+      +'<div class="kpi-val">'+k.v+'</div>'
+      +'<div class="kpi-delta '+k.d.c+'">'+k.d.t+'</div>'
+      +'<div class="kpi-sub">'+k.s+'</div>'
+      +'</div>';
+  }).join('');
+
+  renderSeccion1(hoy,ayer,hist);
+  renderSeccion2(hoy,ayer,hist);
+  renderHistorial(hist);
+}
+
+function renderSeccion1(hoy,ayer,hist){
+  var s=hoy.s1;
+  document.getElementById('s1-total-bdg').textContent=s.total+' órdenes';
+
+  // KPIs S1
+  document.getElementById('kpi-s1').innerHTML=[
+    {c:'c-red',l:'Total FEE Vencidas',v:s.total.toLocaleString(),d:ayer?delta(s.total,ayer.s1.total,true):{t:'—',c:'neu'}},
+    {c:'c-green',l:'En Locación Entrega',v:s.entrega.toLocaleString(),d:ayer?delta(s.entrega,ayer.s1.entrega,true):{t:'—',c:'neu'}},
+    {c:'c-amber',l:'En Transferencia',v:s.transf.toLocaleString(),d:ayer?delta(s.transf,ayer.s1.transf,true):{t:'—',c:'neu'}},
+    {c:'c-purple',l:'Sin Disponibilidad',v:s.sinDisp.toLocaleString(),d:ayer?delta(s.sinDisp,ayer.s1.sinDisp,true):{t:'—',c:'neu'}}
+  ].map(function(k){
+    return '<div class="kpi '+k.c+'"><div class="kpi-lbl">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="kpi-delta '+k.d.c+'">'+k.d.t+'</div></div>';
+  }).join('');
+
+  // Años S1
+  renderAnios('years-s1', s.anios);
+
+  // Gráfica tendencia entrega S1
+  var fechas=hist.map(function(h){return h.fecha;}).reverse();
+  var vals=hist.map(function(h){return h.s1.entrega;}).reverse();
+  mkChart('chart-s1-entrega','line',{
+    labels:fechas,
+    datasets:[{label:'En Locación Entrega',data:vals,borderColor:'#FF3B5C',backgroundColor:'rgba(255,59,92,0.08)',tension:0.4,pointRadius:3,borderWidth:2,fill:true}]
+  });
+
+  // Donut S1
+  var soEntries=Object.entries(s.so).sort(function(a,b){return b[1]-a[1];}).slice(0,6);
+  var donutColors=['rgba(255,59,92,0.8)','rgba(255,184,0,0.8)','rgba(0,229,160,0.8)','rgba(0,212,255,0.8)','rgba(181,123,255,0.8)','rgba(233,30,140,0.8)'];
+  mkChart('chart-s1-donut','doughnut',{
+    labels:soEntries.map(function(e){return e[0].substring(0,20);}),
+    datasets:[{data:soEntries.map(function(e){return e[1];}),backgroundColor:donutColors,borderColor:donutColors.map(function(c){return c.replace('0.8','1');}),borderWidth:1,hoverOffset:6}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8B92B8',font:{family:'JetBrains Mono',size:9},padding:8}}}});
+
+  // Status SO detail S1
+  renderStatusSO('status-s1',s.so,s.total);
+
+  // Tabla S1
+  var tbody=document.getElementById('tbody-s1');
+  tbody.innerHTML=s.detalle.map(function(r){
+    var esCedis=r.so.toLowerCase().indexOf('entrega')>=0;
+    return '<tr>'
+      +'<td>'+r.emision+'</td>'
+      +'<td><span class="bdg '+(r.anio==2024?'bdg-red':r.anio==2025?'bdg-amber':'bdg-cyan')+'">'+r.anio+'</span></td>'
+      +'<td style="color:var(--cyan);font-size:10px">'+r.linea+'</td>'
+      +'<td style="color:var(--text)">'+r.sku+'</td>'
+      +'<td>'+r.promesa+'</td>'
+      +'<td><span class="bdg '+(esCedis?'bdg-red':'bdg-amber')+'">'+r.so.substring(0,25)+'</span></td>'
+      +'<td style="color:var(--red)">'+r.fee+'</td>'
+      +'<td style="color:var(--green)">$'+r.importe.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+function renderSeccion2(hoy,ayer,hist){
+  var s=hoy.s2;
+  document.getElementById('s2-total-bdg').textContent=s.total+' órdenes';
+
+  // KPIs S2
+  document.getElementById('kpi-s2').innerHTML=[
+    {c:'c-amber',l:'Total Promesa Vencida',v:s.total.toLocaleString(),d:ayer?delta(s.total,ayer.s2.total,true):{t:'—',c:'neu'}},
+    {c:'c-green',l:'En Locación Entrega',v:s.entrega.toLocaleString(),d:ayer?delta(s.entrega,ayer.s2.entrega,true):{t:'—',c:'neu'}},
+    {c:'c-amber',l:'En Transferencia',v:s.transf.toLocaleString(),d:ayer?delta(s.transf,ayer.s2.transf,true):{t:'—',c:'neu'}},
+    {c:'c-purple',l:'Sin Disponibilidad',v:s.sinDisp.toLocaleString(),d:ayer?delta(s.sinDisp,ayer.s2.sinDisp,true):{t:'—',c:'neu'}}
+  ].map(function(k){
+    return '<div class="kpi '+k.c+'"><div class="kpi-lbl">'+k.l+'</div><div class="kpi-val">'+k.v+'</div><div class="kpi-delta '+k.d.c+'">'+k.d.t+'</div></div>';
+  }).join('');
+
+  // Años S2
+  renderAnios('years-s2', s.anios);
+
+  // Gráfica por mes de emisión
+  var mesEm=s.mesEmision||{};
+  var mesEmKeys=Object.keys(mesEm).sort();
+  mkChart('chart-s2-emision','bar',{
+    labels:mesEmKeys,
+    datasets:[{label:'Órdenes vencidas',data:mesEmKeys.map(function(k){return mesEm[k];}),backgroundColor:'rgba(233,30,140,0.6)',borderColor:'#E91E8C',borderWidth:1,borderRadius:4}]
+  },{...CHART_OPTS,plugins:{legend:{display:false}}});
+
+  // Gráfica por mes de promesa
+  var mesPr=s.mesPromesa||{};
+  var mesPrKeys=Object.keys(mesPr).sort();
+  mkChart('chart-s2-promesa','bar',{
+    labels:mesPrKeys,
+    datasets:[{label:'Prometidas',data:mesPrKeys.map(function(k){return mesPr[k];}),backgroundColor:'rgba(255,184,0,0.6)',borderColor:'#FFB800',borderWidth:1,borderRadius:4}]
+  },{...CHART_OPTS,plugins:{legend:{display:false}}});
+
+  // Tendencia entrega S2
+  var fechas=hist.map(function(h){return h.fecha;}).reverse();
+  var vals=hist.map(function(h){return h.s2.entrega;}).reverse();
+  mkChart('chart-s2-entrega','line',{
+    labels:fechas,
+    datasets:[{label:'En Locación Entrega',data:vals,borderColor:'#FFB800',backgroundColor:'rgba(255,184,0,0.08)',tension:0.4,pointRadius:3,borderWidth:2,fill:true}]
+  });
+
+  // Donut S2
+  var soEntries=Object.entries(s.so).sort(function(a,b){return b[1]-a[1];}).slice(0,6);
+  var donutColors=['rgba(255,184,0,0.8)','rgba(255,59,92,0.8)','rgba(0,229,160,0.8)','rgba(0,212,255,0.8)','rgba(181,123,255,0.8)','rgba(233,30,140,0.8)'];
+  mkChart('chart-s2-donut','doughnut',{
+    labels:soEntries.map(function(e){return e[0].substring(0,20);}),
+    datasets:[{data:soEntries.map(function(e){return e[1];}),backgroundColor:donutColors,borderColor:donutColors.map(function(c){return c.replace('0.8','1');}),borderWidth:1,hoverOffset:6}]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8B92B8',font:{family:'JetBrains Mono',size:9},padding:8}}}});
+
+  // Status SO detail S2
+  renderStatusSO('status-s2',s.so,s.total);
+
+  // Tabla S2
+  var tbody=document.getElementById('tbody-s2');
+  tbody.innerHTML=s.detalle.map(function(r){
+    var esCedis=r.so.toLowerCase().indexOf('entrega')>=0;
+    var dCls=typeof r.dias==='number'?(r.dias>30?'bdg-red':r.dias>7?'bdg-amber':'bdg-pink'):'bdg-cyan';
+    return '<tr>'
+      +'<td>'+r.emision+'</td>'
+      +'<td><span class="bdg '+(r.anio==2024?'bdg-red':r.anio==2025?'bdg-amber':'bdg-cyan')+'">'+r.anio+'</span></td>'
+      +'<td style="color:var(--cyan);font-size:10px">'+r.linea+'</td>'
+      +'<td style="color:var(--text)">'+r.sku+'</td>'
+      +'<td>'+r.promesa+'</td>'
+      +'<td><span class="bdg '+dCls+'">'+(r.dias||'0')+' d</span></td>'
+      +'<td><span class="bdg '+(esCedis?'bdg-amber':'bdg-purple')+'">'+r.so.substring(0,25)+'</span></td>'
+      +'<td style="color:var(--green)">$'+r.importe.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+function renderAnios(elId, anios){
+  var el=document.getElementById(elId);
+  var sorted=Object.keys(anios).sort();
+  el.innerHTML=sorted.map(function(a){
+    return '<div class="year-pill">'
+      +'<div class="year-pill-yr">'+a+'</div>'
+      +'<div class="year-pill-val">'+anios[a].toLocaleString()+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderStatusSO(elId,so,total){
+  var el=document.getElementById(elId);
+  var entries=Object.entries(so).sort(function(a,b){return b[1]-a[1];});
+  el.innerHTML=entries.map(function(e){
+    var pct=total>0?Math.round((e[1]/total)*100):0;
+    return '<div class="status-item">'
+      +'<div class="status-name">'+e[0].replace(/^En\s+/i,'')+'</div>'
+      +'<div class="status-val">'+e[1].toLocaleString()+'</div>'
+      +'<div class="status-pct">'+pct+'% del total</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderHistorial(hist){
+  document.getElementById('hist-dias-bdg').textContent=hist.length+' días';
+
+  // Gráficas históricas
+  var fechas=hist.map(function(h){return h.fecha;}).reverse();
+  mkChart('chart-hist-s1','line',{
+    labels:fechas,
+    datasets:[
+      {label:'FEE Venc. En CEDIS',data:hist.map(function(h){return h.s1.entrega;}).reverse(),borderColor:'#FF3B5C',backgroundColor:'rgba(255,59,92,0.06)',tension:0.4,pointRadius:3,borderWidth:2,fill:true},
+      {label:'En Transf.',data:hist.map(function(h){return h.s1.transf;}).reverse(),borderColor:'#FFB800',backgroundColor:'transparent',tension:0.4,pointRadius:2,borderWidth:1.5,borderDash:[4,4]},
+      {label:'Sin Disp.',data:hist.map(function(h){return h.s1.sinDisp;}).reverse(),borderColor:'#B57BFF',backgroundColor:'transparent',tension:0.4,pointRadius:2,borderWidth:1.5}
+    ]
+  });
+
+  mkChart('chart-hist-s2','line',{
+    labels:fechas,
+    datasets:[
+      {label:'Promesa Venc. En CEDIS',data:hist.map(function(h){return h.s2.entrega;}).reverse(),borderColor:'#FFB800',backgroundColor:'rgba(255,184,0,0.06)',tension:0.4,pointRadius:3,borderWidth:2,fill:true},
+      {label:'En Transf.',data:hist.map(function(h){return h.s2.transf;}).reverse(),borderColor:'#00D4FF',backgroundColor:'transparent',tension:0.4,pointRadius:2,borderWidth:1.5,borderDash:[4,4]}
+    ]
+  });
+
+  // Tabla historial
+  var tbody=document.getElementById('tbody-hist');
+  tbody.innerHTML=hist.map(function(h,i){
+    var prev=hist[i+1];
+    var ds1=prev?delta(h.s1.total,prev.s1.total,true):{t:'—',c:'neu'};
+    var ds2=prev?delta(h.s2.total,prev.s2.total,true):{t:'—',c:'neu'};
+    return '<tr>'
+      +'<td style="color:var(--pink);font-weight:600">'+h.fecha+'</td>'
+      +'<td style="color:var(--red)">'+h.s1.total.toLocaleString()+'</td>'
+      +'<td style="color:var(--green)">'+h.s1.entrega.toLocaleString()+'</td>'
+      +'<td style="color:var(--amber)">'+h.s1.transf.toLocaleString()+'</td>'
+      +'<td style="color:var(--purple)">'+h.s1.sinDisp.toLocaleString()+'</td>'
+      +'<td class="kpi-delta '+ds1.c+'">'+ds1.t+'</td>'
+      +'<td style="color:var(--amber)">'+h.s2.total.toLocaleString()+'</td>'
+      +'<td style="color:var(--green)">'+h.s2.entrega.toLocaleString()+'</td>'
+      +'<td style="color:var(--amber)">'+h.s2.transf.toLocaleString()+'</td>'
+      +'<td class="kpi-delta '+ds2.c+'">'+ds2.t+'</td>'
+      +'<td><span class="bdg '+(h.feePct>=80?'bdg-green':h.feePct>=60?'bdg-amber':'bdg-red')+'">'+h.feePct+'%</span></td>'
+      +'</tr>';
+  }).join('');
+}
+
+/* ══ EXPORT ══ */
+function exportarHoy(){
+  var h=getHist(); if(!h.length){toast('Sin datos','err');return;}
+  var d=h[0]; var rows=d.s1.detalle.concat(d.s2.detalle);
+  var csv='Seccion,Fecha Emision,Año,Linea,SKU,Fecha Promesa,Estatus SO,Importe\n'
+    +d.s1.detalle.map(function(r){return 'FEE Vencida,'+[r.emision,r.anio,r.linea,'"'+r.sku+'"',r.promesa,r.so,r.importe].join(',');}).join('\n')
+    +'\n'
+    +d.s2.detalle.map(function(r){return 'Promesa Vencida,'+[r.emision,r.anio,r.linea,'"'+r.sku+'"',r.promesa,r.so,r.importe].join(',');}).join('\n');
+  descargar('vencidas_'+d.fecha.replace(/\//g,'-')+'.csv',csv,'text/csv');
+}
+
+function exportarHistorial(){
+  var h=getHist(); if(!h.length){toast('Sin datos','err');return;}
+  var csv='Fecha,Total,Entregadas,Pendientes,%FEE,S1 Total,S1 CEDIS,S1 Transf,S1 SinDisp,S2 Total,S2 CEDIS,S2 Transf\n'
+    +h.map(function(d){return[d.fecha,d.total,d.entregadas,d.pendientes,d.feePct,d.s1.total,d.s1.entrega,d.s1.transf,d.s1.sinDisp,d.s2.total,d.s2.entrega,d.s2.transf].join(',');}).join('\n');
+  descargar('historial_oms.csv',csv,'text/csv');
+}
+
+function descargar(n,c,t){
+  var b=new Blob([c],{type:t}),u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download=n;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+}
+
+function limpiarHistorial(){
+  if(!confirm('¿Borrar todo el historial?'))return;
+  localStorage.removeItem(SK);location.reload();
+}
+
+/* ══ INIT ══ */
+window.addEventListener('load',function(){
+  var h=getHist();
+  if(h.length){ renderDashboard(h); }
+});
+</script>
+</body>
+</html>
