@@ -334,18 +334,6 @@ function calcular(rows){
   function ganio(arr){var g={};arr.forEach(function(r){var a=anio(r['Fecha Emisión']||r['Fecha Emision']||'');if(a)g[a]=(g[a]||0)+nl(r);});return g;}
   function gmes(arr){
     var g={};
-    var mnames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    arr.forEach(function(r){
-      var d=pf(r['Fecha Emisión']||r['Fecha Emision']||'');if(!d)return;
-      var k=d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1);
-      var lbl=mnames[d.getMonth()]+' '+d.getFullYear();
-      if(!g[k])g[k]={lbl:lbl,val:0};
-      g[k].val=(g[k].val||0)+nl(r);
-    });
-    return g;
-  }
-  function gmes(arr){
-    var g={};
     var mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     arr.forEach(function(r){
       var d=pf(r['Fecha Emisión']||r['Fecha Emision']||'');if(!d)return;
@@ -538,7 +526,7 @@ function renderMeses(el,meses){
   var keys=Object.keys(meses).sort();
   document.getElementById(el).innerHTML=keys.map(function(k){
     var m=meses[k];
-    return '<div class="ypill"><span class="ypill-yr">'+m.lbl+'</span><span class="ypill-val">'+fmt(m.val)+'</span></div>';
+    return '<div class="ypill"><span class="ypill-yr">'+m.lbl+'</span><span class="ypill-val">'+fmt(m.v)+'</span></div>';
   }).join('');
 }
 
