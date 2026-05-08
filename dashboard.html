@@ -319,7 +319,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 <div class="toast" id="toast"></div>
 
 <script>
-var SK='oms_v7';
+var SK='oms_v8';
 function gh(){try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];}}
 function sh(h){try{localStorage.setItem(SK,JSON.stringify(h));}catch(e){}}
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast show '+(t||'');setTimeout(function(){el.className='toast';},3200);}
@@ -327,7 +327,7 @@ function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.
 var ups=document.getElementById('ups');
 ups.addEventListener('dragover',function(e){e.preventDefault();ups.style.background='#FDF2F8';});
 ups.addEventListener('dragleave',function(){ups.style.background='';});
-ups.addEventListener('drop',function(e){e.preventDefault();ups.style.background='';var f=e.dataTransfer.files[0];if(f)proc(f);});
+ups.addEventListener('drop',function(e){e.preventDefault();ups.style.background='';var files=Array.from(e.dataTransfer.files).filter(function(f){return f.name.endsWith('.csv');});if(files.length>1)procesarMultiplesArchivos(files);else if(files.length===1)proc(files[0]);});
 function cargarCSV(inp){if(!inp.files||!inp.files[0])return;proc(inp.files[0]);inp.value='';}
 
 function cargarCSVMultiple(inp){
@@ -794,7 +794,7 @@ function renderRezagadas(det){
 function exportarHoy(){
   var hist=gh();if(!hist.length){toast('Sin datos para exportar','err');return;}
   var h=hist[0];
-  var rows=['﻿Seccion,Fecha Emision,Ano,Linea SO-SKU-SHIP,SKU,Fecha Promesa,Dias Vencida,Estatus SO,FEE Pendiente,Lineas,Importe'];
+  var rows=['Seccion,Fecha Emision,Ano,Linea SO-SKU-SHIP,SKU,Fecha Promesa,Dias Vencida,Estatus SO,FEE Pendiente,Lineas,Importe'];
   (h.s1.det||[]).forEach(function(r){
     rows.push([csvEsc('S1-FEE Vencida'),csvEsc(r.em),csvEsc(r.anio),csvEsc(r.linea),csvEsc(r.sku),csvEsc(r.pr),'',csvEsc(r.so),csvEsc(r.fee),r.lineas,r.imp].join(','));
   });
@@ -812,7 +812,7 @@ function descargarRezagadas(){
   var hist=gh();if(!hist.length){toast('Sin datos','err');return;}
   var det=hist[0].s2.det||[];
   var hoy2=new Date();hoy2.setHours(0,0,0,0);
-  var rows=['﻿Días Vencida,Fecha Promesa,OV,SKU,Estatus SO,Importe'];
+  var rows=['Días Vencida,Fecha Promesa,OV,SKU,Estatus SO,Importe'];
   det.filter(function(r){var fp=pf(r.pr);return fp&&fp<hoy2;})
     .map(function(r){var fp=pf(r.pr);return{dias:Math.floor((hoy2-fp)/864e5),r:r};})
     .sort(function(a,b){return b.dias-a.dias;})
@@ -831,7 +831,7 @@ function descargarRezagadas(){
 function descargarS3(){
   var hist=gh();if(!hist.length){toast('Sin datos','err');return;}
   var det=(hist[0].s3||{}).det||[];
-  var rows=['﻿Fecha Emisión,OV,SKU,Estatus SO,FEE Pendiente,Importe'];
+  var rows=['Fecha Emisión,OV,SKU,Estatus SO,FEE Pendiente,Importe'];
   det.forEach(function(r){
     var ov=(r.linea||'').split('-')[0];
     rows.push([csvEsc(r.em),csvEsc(ov),csvEsc(r.sku),csvEsc(r.so),csvEsc(r.fee),r.imp].join(','));
