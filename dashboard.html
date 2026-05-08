@@ -149,7 +149,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 
 /* CHART */
 .chart-area{flex:1;min-height:0;display:flex;flex-direction:column;gap:3px;overflow:hidden}
-.chart-label{font-size:10px;font-weight:600;color:var(--ink3);flex-shrink:0;text-transform:uppercase;letter-spacing:0.6px}
+.chart-label{font-size:8px;font-weight:600;color:var(--ink3);flex-shrink:0;text-transform:uppercase;letter-spacing:0.6px}
 .chart-wrap{position:relative;flex:1;min-height:0}
 
 /* STATUS SO */
@@ -163,6 +163,19 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .so-name{font-size:9px;color:var(--ink2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .so-val{font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:var(--ink)}
 .so-pct{font-size:10px;color:var(--ink3);margin-left:3px}
+
+/* REZAGADAS */
+.rezagadas-wrap{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.rezagadas-wrap::-webkit-scrollbar{width:2px}.rezagadas-wrap::-webkit-scrollbar-thumb{background:var(--brd2)}
+.rez-row{display:flex;align-items:center;gap:6px;padding:3px 6px;background:var(--s2);border-radius:4px;border:1px solid var(--brd)}
+.rez-dias{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:var(--red);min-width:36px;text-align:right;flex-shrink:0}
+.rez-promesa{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);min-width:72px;flex-shrink:0}
+.rez-ov{font-family:'DM Mono',monospace;font-size:9px;color:var(--blue);min-width:80px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rez-sku{font-size:9px;color:var(--ink2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rez-so{font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;flex-shrink:0}
+.rez-so-ent{background:var(--grn-lt);color:var(--grn)}
+.rez-so-sin{background:var(--red-lt);color:var(--red)}
+.rez-so-oth{background:var(--s3);color:var(--ink3)}
 
 /* GRUPOS */
 .gcard{
@@ -258,8 +271,24 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 
     <div class="row-grupos">
       <div class="gcard">
-        <div class="gcard-title">&#128230; Grupos de artículo — S1 FEE Vencida · Solo en CEDIS (En locación de entrega)</div>
+        <div class="gcard-title">&#128230; Grupos de artículo — S1 FEE Vencida · Solo en CEDIS</div>
         <div class="gitems" id="gitems"></div>
+      </div>
+      <div class="gcard">
+        <div class="gcard-title">&#9201; Top órdenes más rezagadas — S2 Promesa Vencida</div>
+        <div class="rezagadas-wrap" id="rezagadas"></div>
+      </div>
+      <div class="gcard" style="max-width:260px;flex-shrink:0">
+        <div class="gcard-title" style="display:flex;align-items:center;gap:6px">
+          &#9888; Sin Fecha Promesa
+          <span class="pill pill-red" id="s3b" style="margin-left:auto">0</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;margin-bottom:4px">
+          <div class="mk c-pur" style="flex:1"><div class="ml">Total</div><div class="mk-value" id="s3-total" style="font-size:16px">0</div></div>
+          <div class="mk c-grn" style="flex:1"><div class="ml">CEDIS</div><div class="mk-value" id="s3-cedis" style="font-size:16px">0</div></div>
+          <div class="mk c-amber" style="flex:1"><div class="ml">Transf.</div><div class="mk-value" id="s3-transf" style="font-size:16px">0</div></div>
+        </div>
+        <div class="rezagadas-wrap" id="s3lista"></div>
       </div>
     </div>
 
@@ -374,8 +403,15 @@ var MS={ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:1
 function pf(s){
   if(!s||s==='-'||!s.trim())return null;
   var m=s.trim().match(/^(\d+)\s+(\w+)\s+(\d{4})$/);
-  if(m){var d=new Date(+m[3],(MS[m[2].toLowerCase()]||0),+m[1]);return isNaN(d)?null:d;}
-  var d=new Date(s);return isNaN(d)?null:d;
+  if(m){
+    var anio=+m[3];
+    if(anio<2000)return null; // ignorar fechas 1900 (sin fecha real)
+    var d=new Date(anio,(MS[m[2].toLowerCase()]||0),+m[1]);
+    return isNaN(d)?null:d;
+  }
+  var d=new Date(s);
+  if(isNaN(d)||d.getFullYear()<2000)return null;
+  return d;
 }
 function nl(r){return parseFloat(r['LINEAS']||r['Lineas']||1)||1;}
 function anio(s){var d=pf(s);return d?d.getFullYear():null;}
@@ -446,6 +482,12 @@ function calcular(rows){
     ggrupos[g]=(ggrupos[g]||0)+nl(r);
   });
 
+  // S3: Pendientes sin fecha promesa (1900 o vacía)
+  var s3R=pendR.filter(function(r){
+    var fp=pf(r['Fecha Promesa Actualizada']||r['Fecha Homologada']||'');
+    return !fp; // sin fecha válida
+  });
+
   var snap={
     fecha:fs,total:total,ent:ent,pend:pend,feePct:feePct,
     s1:{
@@ -461,6 +503,19 @@ function calcular(rows){
         fee:(r['Cumplimiento FEE homologado pendientes']||'-'),
         imp:parseFloat(r['Importe Pagado'])||0,
         lineas:nl(r)
+      };})
+    },
+    s3:{
+      total:sum(s3R),
+      cedis:cso(s3R,'entrega'),
+      transf:cso(s3R,'transferencia'),
+      det:s3R.slice(0,100).map(function(r){return{
+        em:r['Fecha Emisión']||r['Fecha Emision']||'-',
+        linea:(r['LINEA (SO-SKU-SHIP)']||'-'),
+        sku:(r['Descripción SKU']||r['Descripcion SKU']||'-'),
+        so:(r['Estatus SO']||'-'),
+        fee:(r['Cumplimiento FEE homologado pendientes']||'-'),
+        imp:parseFloat(r['Importe Pagado'])||0
       };})
     },
     s2:{
@@ -588,6 +643,8 @@ function render(hist){
   },options:{...BASE,plugins:{legend:{display:false}}}});
 
   renderSO('so2',h.s2.so,h.s2.total);
+  renderRezagadas(h.s2.det||[]);
+  renderS3(h.s3||{total:0,cedis:0,transf:0,det:[]});
 
   // ── Grupos S1 CEDIS ──
   var grupos=h.s1.grupos||{};
@@ -631,16 +688,19 @@ function renderSO(el,so,total){
     var pct=total>0?Math.round((e[1]/total)*100):0;
     var name;
     if(i<4){
-      // Top 4: nombre completo
-      name=e[0];
+      name=e[0]; // Top 4: nombre completo
     } else {
-      // Resto: abreviado
       name=e[0]
+        .replace(/^En locaci[oó]n de (entrega|transferencia)/i,function(m,p){return p.charAt(0).toUpperCase()+p.slice(1);})
         .replace(/^En locaci[oó]n de /i,'')
         .replace(/^Recibido en locaci[oó]n de /i,'Rec. ')
+        .replace(/^Programado para surtido/i,'Prog. surtido')
         .replace(/^Programado para /i,'Prog. ')
-        .replace(/^Pedido /i,'Ped. ')
-        .replace(/^Sin /i,'Sin ');
+        .replace(/^Pedido TO Recibido/i,'Ped. TO Rec.')
+        .replace(/^Pedido en camino/i,'Ped. camino')
+        .replace(/^Sin disponibilidad/i,'Sin disp.')
+        .replace(/^No programado/i,'No prog.')
+        .replace(/^Rechazo por locaci[oó]n/i,'Rechazo loc.');
     }
     return '<div class="so-item">'
       +'<div class="so-dot" style="background:'+SO_COLORS[i%SO_COLORS.length]+'"></div>'
@@ -651,15 +711,90 @@ function renderSO(el,so,total){
   }).join('');
 }
 
+function csvEsc(v){
+  var s=String(v||'').replace(/"/g,'""');
+  if(s.indexOf(',')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0) s='"'+s+'"';
+  return s;
+}
+function renderS3(s3){
+  document.getElementById('s3b').textContent=fmt(s3.total||0);
+  document.getElementById('s3-total').textContent=fmt(s3.total||0);
+  document.getElementById('s3-cedis').textContent=fmt(s3.cedis||0);
+  document.getElementById('s3-transf').textContent=fmt(s3.transf||0);
+
+  var el=document.getElementById('s3lista');
+  var det=s3.det||[];
+  if(!det.length){
+    el.innerHTML='<div style="color:var(--ink3);font-size:11px;padding:8px">✅ Sin órdenes sin fecha</div>';
+    return;
+  }
+  el.innerHTML=det.map(function(r){
+    var soCls=r.so.toLowerCase().indexOf('entrega')>=0?'rez-so-ent':
+               r.so.toLowerCase().indexOf('sin disp')>=0?'rez-so-sin':'rez-so-oth';
+    var soShort=r.so
+      .replace(/^En locaci[oó]n de entrega/i,'En CEDIS')
+      .replace(/^En locaci[oó]n de transferencia/i,'En transf.')
+      .replace(/^Sin disponibilidad/i,'Sin disp.')
+      .replace(/^Pedido en camino/i,'En camino')
+      .replace(/^Programado para surtido/i,'Prog. surtido')
+      .replace(/^No programado/i,'No prog.')
+      .replace(/^Rechazo por locaci[oó]n/i,'Rechazo');
+    var ov=(r.linea||'').split('-')[0];
+    return '<div class="rez-row">'
+      +'<span class="rez-promesa" style="color:var(--pur)">'+r.em+'</span>'
+      +'<span class="rez-ov" title="'+ov+'">'+ov.substring(0,12)+'</span>'
+      +'<span class="rez-sku" title="'+r.sku+'">'+r.sku+'</span>'
+      +'<span class="rez-so '+soCls+'">'+soShort+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function renderRezagadas(det){
+  var hoy2=new Date();hoy2.setHours(0,0,0,0);
+  // Filtrar solo los que tienen fecha promesa válida y calcular días
+  var rows=det.filter(function(r){
+    var fp=pf(r.pr);
+    return fp&&fp<hoy2;
+  }).map(function(r){
+    var fp=pf(r.pr);
+    var dias=Math.floor((hoy2-fp)/864e5);
+    return{dias:dias,pr:r.pr,ov:r.linea.split('-')[0],sku:r.sku,so:r.so};
+  }).sort(function(a,b){return b.dias-a.dias;}).slice(0,20);
+
+  var el=document.getElementById('rezagadas');
+  if(!rows.length){el.innerHTML='<div style="color:var(--ink3);font-size:11px;padding:8px">Sin órdenes rezagadas</div>';return;}
+
+  el.innerHTML=rows.map(function(r){
+    var soCls=r.so.toLowerCase().indexOf('entrega')>=0?'rez-so-ent':
+               r.so.toLowerCase().indexOf('sin disp')>=0?'rez-so-sin':'rez-so-oth';
+    var soShort=r.so
+      .replace(/^En locaci[oó]n de entrega/i,'En CEDIS')
+      .replace(/^En locaci[oó]n de transferencia/i,'En transf.')
+      .replace(/^Sin disponibilidad/i,'Sin disp.')
+      .replace(/^Pedido en camino/i,'En camino')
+      .replace(/^Programado para surtido/i,'Prog. surtido')
+      .replace(/^Pedido TO Recibido/i,'TO Recibido')
+      .replace(/^No programado/i,'No prog.')
+      .replace(/^Rechazo por locaci[oó]n/i,'Rechazo');
+    return '<div class="rez-row">'
+      +'<span class="rez-dias">'+r.dias+'d</span>'
+      +'<span class="rez-promesa">'+r.pr+'</span>'
+      +'<span class="rez-ov" title="'+r.ov+'">'+r.ov.substring(0,12)+'</span>'
+      +'<span class="rez-sku" title="'+r.sku+'">'+r.sku+'</span>'
+      +'<span class="rez-so '+soCls+'">'+soShort+'</span>'
+      +'</div>';
+  }).join('');
+}
+
 function exportarHoy(){
   var hist=gh();if(!hist.length){toast('Sin datos para exportar','err');return;}
   var h=hist[0];
   var rows=['﻿Seccion,Fecha Emision,Ano,Linea SO-SKU-SHIP,SKU,Fecha Promesa,Dias Vencida,Estatus SO,FEE Pendiente,Lineas,Importe'];
   (h.s1.det||[]).forEach(function(r){
-    rows.push(['S1-FEE Vencida',r.em,r.anio,'"'+r.linea+'"','"'+r.sku+'"',r.pr,'',r.so,r.fee,r.lineas,r.imp].join(','));
+    rows.push([csvEsc('S1-FEE Vencida'),csvEsc(r.em),csvEsc(r.anio),csvEsc(r.linea),csvEsc(r.sku),csvEsc(r.pr),'',csvEsc(r.so),csvEsc(r.fee),r.lineas,r.imp].join(','));
   });
   (h.s2.det||[]).forEach(function(r){
-    rows.push(['S2-Promesa Vencida',r.em,r.anio,'"'+r.linea+'"','"'+r.sku+'"',r.pr,r.dias,r.so,'',r.lineas,r.imp].join(','));
+    rows.push([csvEsc('S2-Promesa Vencida'),csvEsc(r.em),csvEsc(r.anio),csvEsc(r.linea),csvEsc(r.sku),csvEsc(r.pr),r.dias,csvEsc(r.so),'',r.lineas,r.imp].join(','));
   });
   var csv=rows.join('\n');
   var b=new Blob([csv],{type:'text/csv;charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');
