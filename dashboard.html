@@ -217,10 +217,10 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div class="hzone">Zona Norte · 0185</div>
   <div class="hsp"></div>
   <div class="hdate" id="hdate">Sin datos · <b>carga el CSV</b></div>
-  <button class="btn btn-sec" id="btn-carpeta" onclick="vincularCarpeta()" style="display:none">📁 Cambiar carpeta</button>
+  <button class="btn btn-sec" id="btn-carpeta" onclick="authAction('vincularCarpeta')" style="display:none">📁 Cambiar carpeta</button>
   <button class="btn btn-sec" onclick="exportarHoy()">&#8595; Exportar</button>
-  <button class="btn btn-sec" onclick="limpiar()" title="Limpiar historial">&#128465;</button>
-  <button class="btn btn-prim" onclick="document.getElementById('fi').click()">&#128193; Cargar CSV</button>
+  <button class="btn btn-sec" onclick="authAction('limpiar')" title="Limpiar historial">&#128465;</button>
+  <button class="btn btn-prim" onclick="authAction('cargarCSV')">&#128193; Cargar CSV</button>
 </header>
 
 <div class="body">
@@ -292,15 +292,30 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
           <span class="pill pill-red" id="s3b" style="margin-left:4px">0</span>
           <button onclick="descargarS3()" style="margin-left:auto;padding:2px 8px;border:1px solid var(--brd2);border-radius:4px;background:var(--white);color:var(--ink2);font-size:10px;cursor:pointer;display:flex;align-items:center;gap:3px">&#8595; CSV</button>
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;margin-bottom:4px">
-          <div class="mk c-pur" style="flex:1"><div class="ml">Total</div><div class="mk-value" id="s3-total" style="font-size:14px">0</div></div>
-          <div class="mk c-grn" style="flex:1"><div class="ml">CEDIS</div><div class="mk-value" id="s3-cedis" style="font-size:14px">0</div></div>
-          <div class="mk c-amber" style="flex:1"><div class="ml">Transf.</div><div class="mk-value" id="s3-transf" style="font-size:14px">0</div></div>
-        </div>
+
         <div class="rezagadas-wrap" id="s3lista"></div>
       </div>
     </div>
 
+  </div>
+</div>
+
+<div id="auth-modal" style="display:none;position:fixed;inset:0;background:rgba(17,24,39,0.6);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:14px;padding:28px 32px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:20px">🔒</span>
+      <div style="font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;color:#111827">Acceso restringido</div>
+    </div>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:16px">Ingresa la contraseña para continuar</div>
+    <input id="auth-input" type="password" placeholder="Contraseña"
+      style="width:100%;padding:10px 14px;border:1.5px solid #E2E6EF;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:8px"
+      onkeydown="if(event.key==='Enter')authVerificar()"
+      onfocus="this.style.borderColor='#BE185D'" onblur="this.style.borderColor='#E2E6EF'"/>
+    <div id="auth-error" style="font-size:11px;color:#991B1B;margin-bottom:10px;display:none">Contraseña incorrecta</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="authCerrar()" style="flex:1;padding:10px;border:1px solid #E2E6EF;border-radius:8px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#6B7280">Cancelar</button>
+      <button onclick="authVerificar()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#BE185D;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Entrar</button>
+    </div>
   </div>
 </div>
 
@@ -727,9 +742,6 @@ function csvEsc(v){
 }
 function renderS3(s3){
   document.getElementById('s3b').textContent=fmt(s3.total||0);
-  document.getElementById('s3-total').textContent=fmt(s3.total||0);
-  document.getElementById('s3-cedis').textContent=fmt(s3.cedis||0);
-  document.getElementById('s3-transf').textContent=fmt(s3.transf||0);
 
   var el=document.getElementById('s3lista');
   var det=s3.det||[];
@@ -836,6 +848,45 @@ function descargarS3(){
     rows.push([csvEsc(r.em),csvEsc(ov),csvEsc(r.sku),csvEsc(r.so),csvEsc(r.fee),r.imp].join(','));
   });
   var b=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='sin_fecha_'+hist[0].fecha.replace(/[/]/g,'-')+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);toast('Sin Fecha exportadas','ok');
+}
+
+// ── AUTENTICACIÓN ─────────────────────────────────────────────
+var AUTH_KEY = btoa('liverpool0185'); // contraseña: liverpool0185
+var authPendingAction = null;
+var authSesion = false; // sesión activa hasta recargar
+
+function authAction(accion){
+  if(authSesion){ ejecutarAccion(accion); return; }
+  authPendingAction = accion;
+  document.getElementById('auth-modal').style.display = 'flex';
+  document.getElementById('auth-input').value = '';
+  document.getElementById('auth-error').style.display = 'none';
+  setTimeout(function(){ document.getElementById('auth-input').focus(); }, 100);
+}
+
+function authVerificar(){
+  var val = document.getElementById('auth-input').value;
+  if(btoa(val) === AUTH_KEY){
+    authSesion = true;
+    authCerrar();
+    if(authPendingAction) ejecutarAccion(authPendingAction);
+    authPendingAction = null;
+  } else {
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('auth-input').select();
+  }
+}
+
+function authCerrar(){
+  document.getElementById('auth-modal').style.display = 'none';
+  document.getElementById('auth-input').value = '';
+}
+
+function ejecutarAccion(accion){
+  if(accion === 'vincularCarpeta') vincularCarpeta();
+  else if(accion === 'exportarHoy') exportarHoy();
+  else if(accion === 'limpiar') limpiar();
+  else if(accion === 'cargarCSV') document.getElementById('fi').click();
 }
 
 function limpiar(){if(!confirm('¿Borrar todo el historial guardado?'))return;localStorage.removeItem(SK);location.reload();}
