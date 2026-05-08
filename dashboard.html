@@ -171,6 +171,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .rez-dias{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:var(--red);min-width:36px;text-align:right;flex-shrink:0}
 .rez-promesa{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);min-width:72px;flex-shrink:0}
 .rez-ov{font-family:'DM Mono',monospace;font-size:9px;color:var(--blue);min-width:80px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rez-sku2{font-family:'DM Mono',monospace;font-size:9px;color:var(--pink);min-width:80px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rez-sku{font-size:9px;color:var(--ink2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rez-header{display:flex;align-items:center;gap:6px;padding:2px 6px;flex-shrink:0;border-bottom:1px solid var(--brd);margin-bottom:2px}
 .rez-so-hdr{font-size:9px;font-weight:600;color:var(--ink3);min-width:90px;flex-shrink:0}
@@ -218,6 +219,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div class="hsp"></div>
   <div class="hdate" id="hdate">Sin datos · <b>carga el CSV</b></div>
   <button class="btn btn-sec" id="btn-carpeta" onclick="authAction('vincularCarpeta')" style="display:none">📁 Cambiar carpeta</button>
+  <button class="btn btn-sec" id="btn-actualizar" onclick="authAction('actualizar')" style="display:none">🔄 Actualizar</button>
   <button class="btn btn-sec" onclick="exportarHoy()">&#8595; Exportar</button>
   <button class="btn btn-sec" onclick="authAction('limpiar')" title="Limpiar historial">&#128465;</button>
   <button class="btn btn-prim" onclick="authAction('cargarCSV')">&#128193; Cargar CSV</button>
@@ -360,6 +362,7 @@ async function vincularCarpeta(){
     localStorage.setItem(DIR_KEY, dirHandle.name);
     toast('✓ Carpeta vinculada: '+dirHandle.name,'ok');
     document.getElementById('btn-carpeta').style.display='flex';
+    document.getElementById('btn-actualizar').style.display='flex';
     await leerCarpeta();
   } catch(e){
     if(e.name !== 'AbortError') toast('Error al vincular carpeta: '+e.message,'err');
@@ -588,6 +591,7 @@ function calcular(rows){
   if(hist.length>90)hist=hist.slice(0,90);
   sh(hist);
   render(hist);
+  document.getElementById('btn-actualizar').style.display='flex';
   toast('✓ '+Math.round(total).toLocaleString()+' líneas procesadas · S1: '+Math.round(snap.s1.total)+' · S2: '+Math.round(snap.s2.total),'ok');
 }
 
@@ -691,7 +695,7 @@ function render(hist){
 
   // ── Grupos S1 CEDIS ──
   var grupos=h.s1.grupos||{};
-  var gtop=Object.entries(grupos).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  var gtop=Object.entries(grupos).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
   var gmax=gtop.length?gtop[0][1]:1;
   var GCOLS=['#BE185D','#92400E','#1E40AF','#166534','#6B21A8','#0F766E','#B45309','#0369A1','#7C3AED','#047857','#DC2626','#D97706','#1D4ED8','#065F46','#9333EA','#0891B2','#C026D3','#64748B'];
   var gtotal=gtop.reduce(function(a,e){return a+e[1];},0);
@@ -768,12 +772,14 @@ function renderS3(s3){
 function aplicarFiltroS3(){
   var filtro=document.getElementById('s3-filter').value;
   var rows=filtro?_s3Data.filter(function(r){return r.so===filtro;}):_s3Data;
+  document.getElementById('s3b').textContent=rows.length;
   var el=document.getElementById('s3lista');
   if(!rows.length){el.innerHTML='<div style="color:var(--ink3);font-size:11px;padding:8px">✅ Sin órdenes</div>';return;}
   el.innerHTML=rows.map(function(r){
     return '<div class="rez-row">'
       +'<span class="rez-promesa" style="color:var(--pur)">'+r.em+'</span>'
-      +'<span class="rez-ov" title="'+r.ov+'">'+r.ov.substring(0,12)+'</span>'
+      +'<span class="rez-ov" title="'+r.ov+'">'+r.ov.substring(0,10)+'</span>'
+      +'<span class="rez-sku2" title="'+r.sku+'">'+r.sku.substring(0,12)+'</span>'
       +'<span class="rez-sku" title="'+r.sku+'">'+r.sku+'</span>'
       +'<span class="rez-so '+soCls(r.so)+'">'+soShortFn(r.so)+'</span>'
       +'</div>';
@@ -805,7 +811,8 @@ function renderRezagadas(det){
     var fp=pf(r.pr);return fp&&fp<hoy2;
   }).map(function(r){
     var fp=pf(r.pr);
-    return{dias:Math.floor((hoy2-fp)/864e5),pr:r.pr,ov:r.linea.split('-')[0],sku:r.sku,so:r.so};
+    var ov=r.linea?r.linea.split('-')[0]:'';
+    return{dias:Math.floor((hoy2-fp)/864e5),pr:r.pr,ov:ov,sku:r.sku,so:r.so};
   }).sort(function(a,b){return b.dias-a.dias;});
 
   // Poblar filtro
@@ -830,7 +837,8 @@ function aplicarFiltroRez(){
     return '<div class="rez-row">'
       +'<span class="rez-dias">'+r.dias+'d</span>'
       +'<span class="rez-promesa">'+r.pr+'</span>'
-      +'<span class="rez-ov" title="'+r.ov+'">'+r.ov.substring(0,12)+'</span>'
+      +'<span class="rez-ov" title="'+r.ov+'">'+r.ov.substring(0,10)+'</span>'
+      +'<span class="rez-sku2" title="'+r.sku+'">'+r.sku.substring(0,12)+'</span>'
       +'<span class="rez-sku" title="'+r.sku+'">'+r.sku+'</span>'
       +'<span class="rez-so '+soCls(r.so)+'">'+soShortFn(r.so)+'</span>'
       +'</div>';
@@ -914,9 +922,20 @@ function authCerrar(){
 
 function ejecutarAccion(accion){
   if(accion === 'vincularCarpeta') vincularCarpeta();
+  else if(accion === 'actualizar') actualizarDatos();
   else if(accion === 'exportarHoy') exportarHoy();
   else if(accion === 'limpiar') limpiar();
   else if(accion === 'cargarCSV') document.getElementById('fi').click();
+}
+
+async function actualizarDatos(){
+  if(dirHandle){
+    // Ya tiene carpeta vinculada — leer directamente
+    await leerCarpeta();
+  } else {
+    // No hay carpeta — pedir que seleccione
+    toast('Primero vincula una carpeta con 📁 Cambiar carpeta','err');
+  }
 }
 
 function limpiar(){if(!confirm('¿Borrar todo el historial guardado?'))return;localStorage.removeItem(SK);location.reload();}
@@ -927,7 +946,7 @@ window.addEventListener('load',async function(){
   var dirName = localStorage.getItem('oms_dir_name');
   if(dirName){
     document.getElementById('btn-carpeta').style.display='flex';
-    document.getElementById('hdate').innerHTML='Carpeta vinculada: <b>'+dirName+'</b> · <span style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="leerCarpeta()">Actualizar datos</span>';
+    document.getElementById('btn-actualizar').style.display='flex';
   }
 });
 </script>
