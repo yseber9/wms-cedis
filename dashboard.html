@@ -76,7 +76,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 /* MAIN GRID */
 .grid{
   display:grid;
-  grid-template-rows:56px 1fr 120px;
+  grid-template-rows:56px 1fr 160px;
   grid-template-columns:1fr 1fr;
   gap:10px;padding:10px;
   height:100%;overflow:hidden;
@@ -193,6 +193,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .gbar{width:100%;border-radius:3px 3px 0 0;min-height:4px;transition:height 0.4s}
 .gname{font-size:9px;color:var(--ink3);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;font-weight:500}
 .gval{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink)}
+.gpct{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);margin-top:-1px}
 
 /* TOAST */
 .toast{
@@ -283,13 +284,6 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
           &#9201; Órdenes rezagadas — S2 Promesa Vencida
           <button onclick="descargarRezagadas()" style="margin-left:auto;padding:2px 8px;border:1px solid var(--brd2);border-radius:4px;background:var(--white);color:var(--ink2);font-size:10px;cursor:pointer;display:flex;align-items:center;gap:3px">&#8595; CSV</button>
         </div>
-        <div class="rez-header">
-          <span class="rez-dias" style="color:var(--ink3)">Días</span>
-          <span class="rez-promesa" style="color:var(--ink3)">F. Promesa</span>
-          <span class="rez-ov" style="color:var(--ink3)">OV</span>
-          <span class="rez-sku" style="color:var(--ink3)">Descripción</span>
-          <span class="rez-so-hdr" style="color:var(--ink3)">Estatus</span>
-        </div>
         <div class="rezagadas-wrap" id="rezagadas"></div>
       </div>
       <div class="gcard">
@@ -299,15 +293,9 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
           <button onclick="descargarS3()" style="margin-left:auto;padding:2px 8px;border:1px solid var(--brd2);border-radius:4px;background:var(--white);color:var(--ink2);font-size:10px;cursor:pointer;display:flex;align-items:center;gap:3px">&#8595; CSV</button>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;margin-bottom:4px">
-          <div class="mk c-pur" style="flex:1"><div class="ml">Total</div><div class="mk-value" id="s3-total" style="font-size:16px">0</div></div>
-          <div class="mk c-grn" style="flex:1"><div class="ml">CEDIS</div><div class="mk-value" id="s3-cedis" style="font-size:16px">0</div></div>
-          <div class="mk c-amber" style="flex:1"><div class="ml">Transf.</div><div class="mk-value" id="s3-transf" style="font-size:16px">0</div></div>
-        </div>
-        <div class="rez-header">
-          <span class="rez-promesa" style="color:var(--ink3)">F. Emisión</span>
-          <span class="rez-ov" style="color:var(--ink3)">OV</span>
-          <span class="rez-sku" style="color:var(--ink3)">Descripción</span>
-          <span class="rez-so-hdr" style="color:var(--ink3)">Estatus</span>
+          <div class="mk c-pur" style="flex:1"><div class="ml">Total</div><div class="mk-value" id="s3-total" style="font-size:14px">0</div></div>
+          <div class="mk c-grn" style="flex:1"><div class="ml">CEDIS</div><div class="mk-value" id="s3-cedis" style="font-size:14px">0</div></div>
+          <div class="mk c-amber" style="flex:1"><div class="ml">Transf.</div><div class="mk-value" id="s3-transf" style="font-size:14px">0</div></div>
         </div>
         <div class="rezagadas-wrap" id="s3lista"></div>
       </div>
@@ -496,6 +484,19 @@ function calcular(rows){
     return g;
   }
 
+  function gmesPromesa(arr){
+    var g={};
+    arr.forEach(function(r){
+      var d=pf(r['Fecha Promesa Actualizada']||r['Fecha Homologada']||'');if(!d)return;
+      var t=Math.floor(d.getMonth()/3)+1;
+      var k=d.getFullYear()+'-T'+t;
+      var lbl='T'+t+' '+d.getFullYear();
+      if(!g[k])g[k]={lbl:lbl,v:0};
+      g[k].v=(g[k].v||0)+nl(r);
+    });
+    return g;
+  }
+
   var s1CedisR=s1R.filter(function(r){return (r['Estatus SO']||'').toLowerCase().indexOf('entrega')>=0;});
   var ggrupos={};
   s1CedisR.forEach(function(r){
@@ -541,7 +542,7 @@ function calcular(rows){
     },
     s2:{
       total:sum(s2R),cedis:cso(s2R,'entrega'),transf:cso(s2R,'transferencia'),
-      sinDisp:cso(s2R,'sin disponibilidad'),so:gso(s2R),anios:ganio(s2R),meses:gmes(s2R),
+      sinDisp:cso(s2R,'sin disponibilidad'),so:gso(s2R),anios:ganio(s2R),meses:gmesPromesa(s2R),
       det:s2R.slice(0,2000).map(function(r){
         var fp=pf(r['Fecha Promesa Actualizada']||'');
         var dv=fp?(function(){var h2=new Date();h2.setHours(0,0,0,0);fp.setHours(0,0,0,0);var d=Math.floor((h2-fp)/864e5);return d>0?d:0;})():0;
@@ -669,15 +670,18 @@ function render(hist){
 
   // ── Grupos S1 CEDIS ──
   var grupos=h.s1.grupos||{};
-  var gtop=Object.entries(grupos).sort(function(a,b){return b[1]-a[1];}).slice(0,18);
+  var gtop=Object.entries(grupos).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
   var gmax=gtop.length?gtop[0][1]:1;
   var GCOLS=['#BE185D','#92400E','#1E40AF','#166534','#6B21A8','#0F766E','#B45309','#0369A1','#7C3AED','#047857','#DC2626','#D97706','#1D4ED8','#065F46','#9333EA','#0891B2','#C026D3','#64748B'];
+  var gtotal=gtop.reduce(function(a,e){return a+e[1];},0);
   document.getElementById('gitems').innerHTML=gtop.map(function(e,i){
-    var pct=Math.round((e[1]/gmax)*100);
-    var name=e[0].length>14?e[0].substring(0,13)+'…':e[0];
+    var hpct=Math.round((e[1]/gmax)*100);
+    var ppct=gtotal>0?Math.round((e[1]/gtotal)*100):0;
+    var name=e[0].length>12?e[0].substring(0,11)+'…':e[0];
     return '<div class="gitem">'
       +'<div class="gval">'+Math.round(e[1])+'</div>'
-      +'<div class="gbar-bg"><div class="gbar" style="height:'+pct+'%;background:'+GCOLS[i%GCOLS.length]+'"></div></div>'
+      +'<div class="gpct">'+ppct+'%</div>'
+      +'<div class="gbar-bg"><div class="gbar" style="height:'+hpct+'%;background:'+GCOLS[i%GCOLS.length]+'"></div></div>'
       +'<div class="gname" title="'+e[0]+'">'+name+'</div>'
       +'</div>';
   }).join('');
