@@ -820,12 +820,7 @@ function descargarRezagadas(){
       var ov=(x.r.linea||'').split('-')[0];
       rows.push([x.dias,csvEsc(x.r.pr),csvEsc(ov),csvEsc(x.r.sku),csvEsc(x.r.so),x.r.imp].join(','));
     });
-  var b=new Blob([rows.join('
-')],{type:'text/csv;charset=utf-8'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(b);
-  a.download='rezagadas_s2_'+hist[0].fecha.replace(/[/]/g,'-')+'.csv';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  toast('Rezagadas exportadas','ok');
+  var b=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='rezagadas_s2_'+hist[0].fecha.replace(/[/]/g,'-')+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);toast('Rezagadas exportadas','ok');
 }
 
 function descargarS3(){
@@ -836,12 +831,7 @@ function descargarS3(){
     var ov=(r.linea||'').split('-')[0];
     rows.push([csvEsc(r.em),csvEsc(ov),csvEsc(r.sku),csvEsc(r.so),csvEsc(r.fee),r.imp].join(','));
   });
-  var b=new Blob([rows.join('
-')],{type:'text/csv;charset=utf-8'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(b);
-  a.download='sin_fecha_'+hist[0].fecha.replace(/[/]/g,'-')+'.csv';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  toast('Sin Fecha exportadas','ok');
+  var b=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='sin_fecha_'+hist[0].fecha.replace(/[/]/g,'-')+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);toast('Sin Fecha exportadas','ok');
 }
 
 function limpiar(){if(!confirm('¿Borrar todo el historial guardado?'))return;localStorage.removeItem(SK);location.reload();}
