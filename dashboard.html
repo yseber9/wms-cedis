@@ -199,20 +199,24 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div class="hzone">Zona Norte · 0185</div>
   <div class="hsp"></div>
   <div class="hdate" id="hdate">Sin datos · <b>carga el CSV</b></div>
+  <button class="btn btn-sec" id="btn-carpeta" onclick="vincularCarpeta()" style="display:none">📁 Cambiar carpeta</button>
   <button class="btn btn-sec" onclick="exportarHoy()">&#8595; Exportar</button>
   <button class="btn btn-sec" onclick="limpiar()" title="Limpiar historial">&#128465;</button>
   <button class="btn btn-prim" onclick="document.getElementById('fi').click()">&#128193; Cargar CSV</button>
 </header>
 
 <div class="body">
-  <div class="upscreen" id="ups" onclick="document.getElementById('fi').click()">
-    <div class="upring">&#128193;</div>
-    <div class="upt">Cargar reporte del día</div>
-    <div class="ups">Arrastra el CSV · o <span>haz click aquí</span></div>
-    <div class="ups" style="font-size:11px;color:var(--ink3)">Cumplimiento x Fecha de Emisión · Filtro 0185 BT CR Zona Norte</div>
+  <div class="upscreen" id="ups">
+    <div class="upring">📁</div>
+    <div class="upt">Vincular carpeta de reportes</div>
+    <div class="ups">Guarda tus CSVs como <span>2024.csv</span>, <span>2025.csv</span>, <span>2026.csv</span></div>
+    <div class="ups" style="font-size:11px;color:var(--ink3);margin-top:4px">El dashboard leerá los archivos automáticamente cada vez que lo abras</div>
+    <button class="btn btn-prim" style="margin-top:16px;padding:10px 24px;font-size:13px" onclick="vincularCarpeta()">📁 Seleccionar carpeta</button>
+    <div class="ups" style="margin-top:8px;font-size:10px;color:var(--ink3)">o carga archivos individuales:</div>
+    <button class="btn btn-sec" style="margin-top:6px" onclick="document.getElementById('fi').click()">📂 Cargar CSV manual</button>
     <div class="pgb" id="pgb"><div class="pgf" id="pgf"></div></div>
   </div>
-  <input type="file" id="fi" accept=".csv" onchange="cargarCSV(this)"/>
+  <input type="file" id="fi" accept=".csv" multiple onchange="cargarCSVMultiple(this)"/>
 
   <div class="grid" id="dc" style="display:none">
 
@@ -276,6 +280,96 @@ ups.addEventListener('dragleave',function(){ups.style.background='';});
 ups.addEventListener('drop',function(e){e.preventDefault();ups.style.background='';var f=e.dataTransfer.files[0];if(f)proc(f);});
 function cargarCSV(inp){if(!inp.files||!inp.files[0])return;proc(inp.files[0]);inp.value='';}
 
+function cargarCSVMultiple(inp){
+  if(!inp.files||!inp.files.length)return;
+  var files = Array.from(inp.files);
+  inp.value='';
+  procesarMultiplesArchivos(files);
+}
+
+// ── FOLDER ACCESS API ────────────────────────────────────────────
+var dirHandle = null;
+var DIR_KEY = 'oms_dir_name';
+
+async function vincularCarpeta(){
+  if(!('showDirectoryPicker' in window)){
+    toast('Tu navegador no soporta File System Access API. Usa la carga manual.','err');
+    return;
+  }
+  try{
+    dirHandle = await window.showDirectoryPicker({mode:'read'});
+    localStorage.setItem(DIR_KEY, dirHandle.name);
+    toast('✓ Carpeta vinculada: '+dirHandle.name,'ok');
+    document.getElementById('btn-carpeta').style.display='flex';
+    await leerCarpeta();
+  } catch(e){
+    if(e.name !== 'AbortError') toast('Error al vincular carpeta: '+e.message,'err');
+  }
+}
+
+async function leerCarpeta(){
+  if(!dirHandle) return;
+  var archivos = [];
+  var barra = document.getElementById('pgb');
+  var fill = document.getElementById('pgf');
+  barra.style.display='block'; fill.style.width='10%';
+
+  for(var anio of ['2024','2025','2026']){
+    try{
+      var fh = await dirHandle.getFileHandle(anio+'.csv');
+      var file = await fh.getFile();
+      archivos.push({file:file, anio:anio});
+      fill.style.width = (archivos.length/3*60+10)+'%';
+    } catch(e){
+      console.log('No se encontró '+anio+'.csv en la carpeta');
+    }
+  }
+
+  barra.style.display='none';
+
+  if(!archivos.length){
+    toast('No se encontraron archivos 2024.csv, 2025.csv o 2026.csv en la carpeta','err');
+    return;
+  }
+
+  toast('Leyendo '+archivos.length+' archivo(s)...','ok');
+  await procesarMultiplesArchivos(archivos.map(function(a){return a.file;}));
+}
+
+async function procesarMultiplesArchivos(files){
+  var barra = document.getElementById('pgb');
+  var fill = document.getElementById('pgf');
+  barra.style.display='block'; fill.style.width='5%';
+
+  var todosSobrios = [];
+  var procesados = 0;
+
+  for(var file of files){
+    await new Promise(function(resolve){
+      Papa.parse(file,{
+        header:true, skipEmptyLines:true,
+        complete:function(res){
+          todosSobrios = todosSobrios.concat(res.data);
+          procesados++;
+          fill.style.width = (procesados/files.length*90+5)+'%';
+          resolve();
+        },
+        error:function(){ resolve(); }
+      });
+    });
+  }
+
+  fill.style.width='100%';
+  setTimeout(function(){ barra.style.display='none'; },300);
+
+  if(!todosSobrios.length){
+    toast('No se encontraron datos en los archivos','err');
+    return;
+  }
+
+  calcular(todosSobrios);
+}
+
 var MS={ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11};
 function pf(s){
   if(!s||s==='-'||!s.trim())return null;
@@ -334,11 +428,11 @@ function calcular(rows){
   function ganio(arr){var g={};arr.forEach(function(r){var a=anio(r['Fecha Emisión']||r['Fecha Emision']||'');if(a)g[a]=(g[a]||0)+nl(r);});return g;}
   function gmes(arr){
     var g={};
-    var mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     arr.forEach(function(r){
       var d=pf(r['Fecha Emisión']||r['Fecha Emision']||'');if(!d)return;
-      var k=d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1);
-      var lbl=mn[d.getMonth()]+' '+d.getFullYear();
+      var t=Math.floor(d.getMonth()/3)+1;
+      var k=d.getFullYear()+'-T'+t;
+      var lbl='T'+t+' '+d.getFullYear();
       if(!g[k])g[k]={lbl:lbl,v:0};
       g[k].v=(g[k].v||0)+nl(r);
     });
@@ -575,7 +669,16 @@ function exportarHoy(){
 }
 
 function limpiar(){if(!confirm('¿Borrar todo el historial guardado?'))return;localStorage.removeItem(SK);location.reload();}
-window.addEventListener('load',function(){var h=gh();if(h.length)render(h);});
+window.addEventListener('load',async function(){
+  var h=gh();
+  if(h.length) render(h);
+  // Mostrar botón carpeta si ya hay una vinculada
+  var dirName = localStorage.getItem('oms_dir_name');
+  if(dirName){
+    document.getElementById('btn-carpeta').style.display='flex';
+    document.getElementById('hdate').innerHTML='Carpeta vinculada: <b>'+dirName+'</b> · <span style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="leerCarpeta()">Actualizar datos</span>';
+  }
+});
 </script>
 </body>
 </html>
