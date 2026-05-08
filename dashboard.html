@@ -281,7 +281,11 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       </div>
       <div class="gcard">
         <div class="gcard-title" style="display:flex;align-items:center;gap:6px">
-          &#9201; Órdenes rezagadas — S2 Promesa Vencida
+          &#9201; Órdenes rezagadas — S2
+          <span class="pill pill-amber" id="rez-count" style="margin-left:2px">0</span>
+          <select id="rez-filter" onchange="aplicarFiltroRez()" style="margin-left:4px;padding:2px 6px;border:1px solid var(--brd2);border-radius:4px;font-size:10px;color:var(--ink2);background:var(--white);cursor:pointer;max-width:120px">
+            <option value="">Todos los estatus</option>
+          </select>
           <button onclick="descargarRezagadas()" style="margin-left:auto;padding:2px 8px;border:1px solid var(--brd2);border-radius:4px;background:var(--white);color:var(--ink2);font-size:10px;cursor:pointer;display:flex;align-items:center;gap:3px">&#8595; CSV</button>
         </div>
         <div class="rezagadas-wrap" id="rezagadas"></div>
@@ -290,9 +294,11 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
         <div class="gcard-title" style="display:flex;align-items:center;gap:6px">
           &#9888; Sin Fecha Promesa
           <span class="pill pill-red" id="s3b" style="margin-left:4px">0</span>
+          <select id="s3-filter" onchange="aplicarFiltroS3()" style="margin-left:4px;padding:2px 6px;border:1px solid var(--brd2);border-radius:4px;font-size:10px;color:var(--ink2);background:var(--white);cursor:pointer;max-width:120px">
+            <option value="">Todos los estatus</option>
+          </select>
           <button onclick="descargarS3()" style="margin-left:auto;padding:2px 8px;border:1px solid var(--brd2);border-radius:4px;background:var(--white);color:var(--ink2);font-size:10px;cursor:pointer;display:flex;align-items:center;gap:3px">&#8595; CSV</button>
         </div>
-
         <div class="rezagadas-wrap" id="s3lista"></div>
       </div>
     </div>
@@ -741,68 +747,92 @@ function csvEsc(v){
   return s;
 }
 function renderS3(s3){
+  _s3Data=(s3.det||[]).map(function(r){
+    var ov=(r.linea||'').split('-')[0];
+    return{em:r.em,ov:ov,sku:r.sku,so:r.so};
+  });
   document.getElementById('s3b').textContent=fmt(s3.total||0);
 
+  // Poblar filtro
+  var soUnicos=[];
+  _s3Data.forEach(function(r){if(soUnicos.indexOf(r.so)<0)soUnicos.push(r.so);});
+  soUnicos.sort();
+  var sel=document.getElementById('s3-filter');
+  var cur=sel.value;
+  sel.innerHTML='<option value="">Todos ('+_s3Data.length+')</option>'
+    +soUnicos.map(function(s){return '<option value="'+s+'"'+(s===cur?' selected':'')+'>'+soShortFn(s)+'</option>';}).join('');
+
+  aplicarFiltroS3();
+}
+
+function aplicarFiltroS3(){
+  var filtro=document.getElementById('s3-filter').value;
+  var rows=filtro?_s3Data.filter(function(r){return r.so===filtro;}):_s3Data;
   var el=document.getElementById('s3lista');
-  var det=s3.det||[];
-  if(!det.length){
-    el.innerHTML='<div style="color:var(--ink3);font-size:11px;padding:8px">✅ Sin órdenes sin fecha</div>';
-    return;
-  }
-  el.innerHTML=det.map(function(r){
-    var soCls=r.so.toLowerCase().indexOf('entrega')>=0?'rez-so-ent':
-               r.so.toLowerCase().indexOf('sin disp')>=0?'rez-so-sin':'rez-so-oth';
-    var soShort=r.so
-      .replace(/^En locaci[oó]n de entrega/i,'En CEDIS')
-      .replace(/^En locaci[oó]n de transferencia/i,'En transf.')
-      .replace(/^Sin disponibilidad/i,'Sin disp.')
-      .replace(/^Pedido en camino/i,'En camino')
-      .replace(/^Programado para surtido/i,'Prog. surtido')
-      .replace(/^No programado/i,'No prog.')
-      .replace(/^Rechazo por locaci[oó]n/i,'Rechazo');
-    var ov=(r.linea||'').split('-')[0];
+  if(!rows.length){el.innerHTML='<div style="color:var(--ink3);font-size:11px;padding:8px">✅ Sin órdenes</div>';return;}
+  el.innerHTML=rows.map(function(r){
     return '<div class="rez-row">'
       +'<span class="rez-promesa" style="color:var(--pur)">'+r.em+'</span>'
-      +'<span class="rez-ov" title="'+ov+'">'+ov.substring(0,12)+'</span>'
+      +'<span class="rez-ov" title="'+r.ov+'">'+r.ov.substring(0,12)+'</span>'
       +'<span class="rez-sku" title="'+r.sku+'">'+r.sku+'</span>'
-      +'<span class="rez-so '+soCls+'">'+soShort+'</span>'
+      +'<span class="rez-so '+soCls(r.so)+'">'+soShortFn(r.so)+'</span>'
       +'</div>';
   }).join('');
 }
 
+var _rezData = [];
+var _s3Data = [];
+
+function soShortFn(so){
+  return so
+    .replace(/^En locaci[oó]n de entrega/i,'En CEDIS')
+    .replace(/^En locaci[oó]n de transferencia/i,'En transf.')
+    .replace(/^Sin disponibilidad/i,'Sin disp.')
+    .replace(/^Pedido en camino/i,'En camino')
+    .replace(/^Programado para surtido/i,'Prog. surtido')
+    .replace(/^Pedido TO Recibido/i,'TO Recibido')
+    .replace(/^No programado/i,'No prog.')
+    .replace(/^Rechazo por locaci[oó]n/i,'Rechazo');
+}
+function soCls(so){
+  return so.toLowerCase().indexOf('entrega')>=0?'rez-so-ent':
+         so.toLowerCase().indexOf('sin disp')>=0?'rez-so-sin':'rez-so-oth';
+}
+
 function renderRezagadas(det){
   var hoy2=new Date();hoy2.setHours(0,0,0,0);
-  // Filtrar solo los que tienen fecha promesa válida y calcular días
-  var rows=det.filter(function(r){
-    var fp=pf(r.pr);
-    return fp&&fp<hoy2;
+  _rezData=det.filter(function(r){
+    var fp=pf(r.pr);return fp&&fp<hoy2;
   }).map(function(r){
     var fp=pf(r.pr);
-    var dias=Math.floor((hoy2-fp)/864e5);
-    return{dias:dias,pr:r.pr,ov:r.linea.split('-')[0],sku:r.sku,so:r.so};
-  }).sort(function(a,b){return b.dias-a.dias;}).slice(0,20);
+    return{dias:Math.floor((hoy2-fp)/864e5),pr:r.pr,ov:r.linea.split('-')[0],sku:r.sku,so:r.so};
+  }).sort(function(a,b){return b.dias-a.dias;});
 
+  // Poblar filtro
+  var soUnicos=[];
+  _rezData.forEach(function(r){if(soUnicos.indexOf(r.so)<0)soUnicos.push(r.so);});
+  soUnicos.sort();
+  var sel=document.getElementById('rez-filter');
+  var cur=sel.value;
+  sel.innerHTML='<option value="">Todos ('+_rezData.length+')</option>'
+    +soUnicos.map(function(s){return '<option value="'+s+'"'+(s===cur?' selected':'')+'>'+soShortFn(s)+'</option>';}).join('');
+
+  aplicarFiltroRez();
+}
+
+function aplicarFiltroRez(){
+  var filtro=document.getElementById('rez-filter').value;
+  var rows=filtro?_rezData.filter(function(r){return r.so===filtro;}):_rezData;
+  document.getElementById('rez-count').textContent=rows.length+' órdenes';
   var el=document.getElementById('rezagadas');
-  if(!rows.length){el.innerHTML='<div style="color:var(--ink3);font-size:11px;padding:8px">Sin órdenes rezagadas</div>';return;}
-
+  if(!rows.length){el.innerHTML='<div style="color:var(--ink3);font-size:11px;padding:8px">Sin órdenes</div>';return;}
   el.innerHTML=rows.map(function(r){
-    var soCls=r.so.toLowerCase().indexOf('entrega')>=0?'rez-so-ent':
-               r.so.toLowerCase().indexOf('sin disp')>=0?'rez-so-sin':'rez-so-oth';
-    var soShort=r.so
-      .replace(/^En locaci[oó]n de entrega/i,'En CEDIS')
-      .replace(/^En locaci[oó]n de transferencia/i,'En transf.')
-      .replace(/^Sin disponibilidad/i,'Sin disp.')
-      .replace(/^Pedido en camino/i,'En camino')
-      .replace(/^Programado para surtido/i,'Prog. surtido')
-      .replace(/^Pedido TO Recibido/i,'TO Recibido')
-      .replace(/^No programado/i,'No prog.')
-      .replace(/^Rechazo por locaci[oó]n/i,'Rechazo');
     return '<div class="rez-row">'
       +'<span class="rez-dias">'+r.dias+'d</span>'
       +'<span class="rez-promesa">'+r.pr+'</span>'
       +'<span class="rez-ov" title="'+r.ov+'">'+r.ov.substring(0,12)+'</span>'
       +'<span class="rez-sku" title="'+r.sku+'">'+r.sku+'</span>'
-      +'<span class="rez-so '+soCls+'">'+soShort+'</span>'
+      +'<span class="rez-so '+soCls(r.so)+'">'+soShortFn(r.so)+'</span>'
       +'</div>';
   }).join('');
 }
@@ -851,7 +881,7 @@ function descargarS3(){
 }
 
 // ── AUTENTICACIÓN ─────────────────────────────────────────────
-var AUTH_KEY = btoa('liverpool0185'); // contraseña: liverpool0185
+var AUTH_KEY = btoa('Rocalet7');
 var authPendingAction = null;
 var authSesion = false; // sesión activa hasta recargar
 
