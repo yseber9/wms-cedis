@@ -404,8 +404,53 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 
 <script>
 var SK='oms_v8';
+var GAS_URL='https://script.google.com/a/macros/liverpool.com.mx/s/AKfycbzqJ7mQoZFGpFUwhU2Yvx4f7JhJetmqfP3rMM7YiChHU4JpaNiBRRO3eQQSh4-u2jAN/exec';
+
+// ── STORAGE: Google Sheets + localStorage fallback ─────────────
 function gh(sfx){var k=SK+(sfx||'');try{return JSON.parse(localStorage.getItem(k)||'[]');}catch(e){return[];}}
 function sh(sfx,h){if(h===undefined){h=sfx;sfx='';}var k=SK+(sfx||'');try{localStorage.setItem(k,JSON.stringify(h));}catch(e){}}
+
+async function dbSave(snap, tab){
+  // Guardar en localStorage inmediatamente
+  var sfx = tab==='suburbia'?'sub':'';
+  var hist = gh(sfx);
+  var idx = hist.findIndex(function(h){return h.fecha===snap.fecha;});
+  if(idx>=0) hist[idx]=snap; else hist.unshift(snap);
+  if(hist.length>90) hist=hist.slice(0,90);
+  sh(sfx, hist);
+
+  // Guardar en Google Sheets en segundo plano
+  try{
+    await fetch(GAS_URL, {
+      method:'POST',
+      body: JSON.stringify(snap),
+      headers:{'Content-Type':'application/json'}
+    });
+    // También pasar tab como query param
+    await fetch(GAS_URL+'?action=save&tab='+(tab||'liverpool'), {
+      method:'POST',
+      body: JSON.stringify(snap),
+      headers:{'Content-Type':'application/json'}
+    });
+  } catch(e){ console.warn('GAS save error:', e); }
+  return hist;
+}
+
+async function dbLoad(tab){
+  // Intentar cargar desde Google Sheets
+  try{
+    var sfx = tab==='suburbia'?'sub':'';
+    var res = await fetch(GAS_URL+'?action=load&tab='+(tab||'liverpool'));
+    var json = await res.json();
+    if(json.ok && json.result && json.result.length){
+      // Guardar en localStorage como caché
+      sh(sfx, json.result);
+      return json.result;
+    }
+  } catch(e){ console.warn('GAS load error, usando localStorage:', e); }
+  // Fallback a localStorage
+  return gh(tab==='suburbia'?'sub':'');
+}
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast show '+(t||'');setTimeout(function(){el.className='toast';},3200);}
 
 var ups=document.getElementById('ups');
@@ -696,14 +741,11 @@ function calcular(rows){
     }
   };
 
-  var hist=gh('');
-  var idx=hist.findIndex(function(h){return h.fecha===fs;});
-  if(idx>=0)hist[idx]=snap;else hist.unshift(snap);
-  if(hist.length>90)hist=hist.slice(0,90);
-  sh('',hist);
-  render(hist);
-  document.getElementById('btn-actualizar').style.display='flex';
-  toast('✓ '+Math.round(total).toLocaleString()+' líneas procesadas · S1: '+Math.round(snap.s1.total)+' · S2: '+Math.round(snap.s2.total),'ok');
+  dbSave(snap,'liverpool').then(function(hist){
+    render(hist);
+    document.getElementById('btn-actualizar').style.display='flex';
+    toast('✓ '+Math.round(total).toLocaleString()+' líneas procesadas · S1: '+Math.round(snap.s1.total)+' · S2: '+Math.round(snap.s2.total),'ok');
+  });
 }
 
 var CH={};
@@ -778,7 +820,7 @@ function render(hist){
         borderColor:'#BE185D',backgroundColor:'rgba(190,24,93,0.08)',
         tension:0.35,pointRadius:hist.length>1?3:5,pointBackgroundColor:'#BE185D',borderWidth:2.5,fill:true}
     ]
-  },options:{...BASE,plugins:{legend:{display:false}}}});
+  },options:Object.assign({},BASE,{plugins:{legend:{display:false}}})});
 
   renderSO('so1',h.s1.so,h.s1.total);
 
@@ -800,7 +842,7 @@ function render(hist){
         borderColor:'#92400E',backgroundColor:'rgba(146,64,14,0.08)',
         tension:0.35,pointRadius:hist.length>1?3:5,pointBackgroundColor:'#92400E',borderWidth:2.5,fill:true}
     ]
-  },options:{...BASE,plugins:{legend:{display:false}}}});
+  },options:Object.assign({},BASE,{plugins:{legend:{display:false}}})});
 
   renderSO('so2',h.s2.so,h.s2.total);
   renderRezagadas(h.s2.det||[]);
@@ -1065,22 +1107,19 @@ function calcularSub(rows){
       det:s1R.slice(0,2000).map(function(r){return{em:r['Fecha Emisión']||'-',anio:anio(r['Fecha Emisión']||'')||'-',linea:(r['LINEA (SO-SKU-SHIP)']||'-'),sku:(r['Descripción SKU']||'-'),pr:r['Fecha Promesa Actualizada']||'-',so:(r.Estatus||'-'),fee:(r['Cumplimiento FEE homologado pendientes']||'-'),cambios:parseInt(r['# Cambio Fechas']||0)||0,imp:parseFloat(r['Importe pagado']||r['Importe Pagado'])||0,lineas:nl2(r)};})
     },
     s2:{total:sum2(s2R),cedis:cso2(s2R,'entrega'),transf:cso2(s2R,'transferencia'),sinDisp:cso2(s2R,'sin disponibilidad'),so:gso2(s2R),meses:gmesPr2(s2R),
-      det:s2R.slice(0,2000).map(function(r){var fp=pf(r['Fecha Promesa Actualizada']||'');var dv=fp?(function(){var h2=new Date();h2.setHours(0,0,0,0);fp.setHours(0,0,0,0);return Math.max(0,Math.floor((h2-fp)/864e5));})()):0;return{em:r['Fecha Emisión']||'-',anio:anio(r['Fecha Emisión']||'')||'-',linea:(r['LINEA (SO-SKU-SHIP)']||'-'),sku:(r['Descripción SKU']||'-'),pr:r['Fecha Promesa Actualizada']||'-',dias:dv,so:(r.Estatus||'-'),cambios:parseInt(r['# Cambio Fechas']||0)||0,imp:parseFloat(r['Importe pagado']||r['Importe Pagado'])||0,lineas:nl2(r)};})
+      det:s2R.slice(0,2000).map(function(r){var fp=pf(r['Fecha Promesa Actualizada']||'');var dv=fp?(function(){var h2=new Date();h2.setHours(0,0,0,0);fp.setHours(0,0,0,0);return Math.max(0,Math.floor((h2-fp)/864e5));})():0;return{em:r['Fecha Emisión']||'-',anio:anio(r['Fecha Emisión']||'')||'-',linea:(r['LINEA (SO-SKU-SHIP)']||'-'),sku:(r['Descripción SKU']||'-'),pr:r['Fecha Promesa Actualizada']||'-',dias:dv,so:(r.Estatus||'-'),cambios:parseInt(r['# Cambio Fechas']||0)||0,imp:parseFloat(r['Importe pagado']||r['Importe Pagado'])||0,lineas:nl2(r)};})
     },
     s3:{total:sum2(s3R),cedis:cso2(s3R,'entrega'),transf:cso2(s3R,'transferencia'),
       det:s3R.slice(0,2000).map(function(r){return{em:r['Fecha Emisión']||'-',linea:(r['LINEA (SO-SKU-SHIP)']||'-'),sku:(r['Descripción SKU']||'-'),so:(r.Estatus||'-'),cambios:parseInt(r['# Cambio Fechas']||0)||0,fee:(r['Cumplimiento FEE homologado pendientes']||'-'),imp:parseFloat(r['Importe pagado']||r['Importe Pagado'])||0};})
     }
   };
 
-  var hist=gh('sub');
-  var idx=hist.findIndex(function(h){return h.fecha===fs;});
-  if(idx>=0)hist[idx]=snap;else hist.unshift(snap);
-  if(hist.length>90)hist=hist.slice(0,90);
-  sh('sub',hist);
-  renderSub(hist);
-  document.getElementById('tabs-bar').style.display='flex';
-  document.getElementById('btn-actualizar').style.display='flex';
-  toast('✓ Suburbia: '+Math.round(total).toLocaleString()+' líneas · S1:'+Math.round(snap.s1.total)+' · S2:'+Math.round(snap.s2.total),'ok');
+  dbSave(snap,'suburbia').then(function(hist){
+    renderSub(hist);
+    document.getElementById('tabs-bar').style.display='flex';
+    document.getElementById('btn-actualizar').style.display='flex';
+    toast('✓ Suburbia: '+Math.round(total).toLocaleString()+' líneas · S1:'+Math.round(snap.s1.total)+' · S2:'+Math.round(snap.s2.total),'ok');
+  });
 }
 
 function nl2(r){return parseFloat(r['Lineas']||r['LINEAS']||1)||1;}
@@ -1114,7 +1153,7 @@ function renderSub(hist){
 
   var fechas=hist.map(function(x){return x.fecha.substring(0,5);}).reverse();
   dc2('cs1-sub');
-  CH['cs1-sub']=new Chart(document.getElementById('cs1-sub'),{type:'line',data:{labels:fechas,datasets:[{label:'CEDIS',data:hist.map(function(x){return Math.round(x.s1.cedis);}).reverse(),borderColor:'#BE185D',backgroundColor:'rgba(190,24,93,0.08)',tension:0.35,pointRadius:hist.length>1?3:5,pointBackgroundColor:'#BE185D',borderWidth:2.5,fill:true}]},options:{...BASE,plugins:{legend:{display:false}}}});
+  CH['cs1-sub']=new Chart(document.getElementById('cs1-sub'),{type:'line',data:{labels:fechas,datasets:[{label:'CEDIS',data:hist.map(function(x){return Math.round(x.s1.cedis);}).reverse(),borderColor:'#BE185D',backgroundColor:'rgba(190,24,93,0.08)',tension:0.35,pointRadius:hist.length>1?3:5,pointBackgroundColor:'#BE185D',borderWidth:2.5,fill:true}]},options:Object.assign({},BASE,{plugins:{legend:{display:false}}})});
   renderSO('so1-sub',h.s1.so,h.s1.total);
 
   document.getElementById('s2b-sub').textContent=fmt(h.s2.total)+' líneas';
@@ -1126,7 +1165,7 @@ function renderSub(hist){
   ]);
   renderMeses('y2-sub',h.s2.meses||{});
   dc2('cs2-sub');
-  CH['cs2-sub']=new Chart(document.getElementById('cs2-sub'),{type:'line',data:{labels:fechas,datasets:[{label:'CEDIS',data:hist.map(function(x){return Math.round(x.s2.cedis);}).reverse(),borderColor:'#92400E',backgroundColor:'rgba(146,64,14,0.08)',tension:0.35,pointRadius:hist.length>1?3:5,pointBackgroundColor:'#92400E',borderWidth:2.5,fill:true}]},options:{...BASE,plugins:{legend:{display:false}}}});
+  CH['cs2-sub']=new Chart(document.getElementById('cs2-sub'),{type:'line',data:{labels:fechas,datasets:[{label:'CEDIS',data:hist.map(function(x){return Math.round(x.s2.cedis);}).reverse(),borderColor:'#92400E',backgroundColor:'rgba(146,64,14,0.08)',tension:0.35,pointRadius:hist.length>1?3:5,pointBackgroundColor:'#92400E',borderWidth:2.5,fill:true}]},options:Object.assign({},BASE,{plugins:{legend:{display:false}}})});
   renderSO('so2-sub',h.s2.so,h.s2.total);
 
   // Rezagadas sub
@@ -1242,17 +1281,22 @@ async function actualizarDatos(){
 
 function limpiar(){if(!confirm('¿Borrar todo el historial guardado?'))return;localStorage.removeItem(SK);localStorage.removeItem(SK+'sub');location.reload();}
 window.addEventListener('load',async function(){
-  var h=gh('');
-  if(h.length){ render(h); document.getElementById('tabs-bar').style.display='flex'; }
-  var hSub=gh('sub');
-  if(hSub.length){ renderSub(hSub); document.getElementById('tabs-bar').style.display='flex'; }
-  if(h.length&&hSub.length) switchTab('liverpool');
   // Mostrar botón carpeta si ya hay una vinculada
   var dirName = localStorage.getItem('oms_dir_name');
   if(dirName){
     document.getElementById('btn-carpeta').style.display='flex';
     document.getElementById('btn-actualizar').style.display='flex';
   }
+
+  // Cargar desde Google Sheets (con fallback a localStorage)
+  toast('Cargando historial...','');
+  var h = await dbLoad('liverpool');
+  var hSub = await dbLoad('suburbia');
+
+  if(h.length){ render(h); document.getElementById('tabs-bar').style.display='flex'; document.getElementById('btn-actualizar').style.display='flex'; }
+  if(hSub.length){ renderSub(hSub); document.getElementById('tabs-bar').style.display='flex'; }
+  if(h.length&&hSub.length) switchTab('liverpool');
+  if(h.length||hSub.length) toast('✓ Historial cargado','ok');
 });
 </script>
 </body>
