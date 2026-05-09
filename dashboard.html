@@ -54,7 +54,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .btn-prim:hover{background:#9d1256}
 
 /* ── LAYOUT ── */
-.body{height:calc(100vh - 52px);display:flex;flex-direction:column;overflow:hidden}
+.body{height:calc(100vh - 52px);display:flex;flex-direction:column;overflow:hidden;}
 
 /* UPLOAD */
 .upscreen{
@@ -193,6 +193,12 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .gval{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink)}
 .gpct{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink3);margin-top:-1px}
 
+/* TABS */
+.tabs-bar{display:flex;gap:4px;padding:6px 10px 0;background:var(--bg);flex-shrink:0}
+.tab-btn{padding:6px 16px;border-radius:7px 7px 0 0;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--brd);border-bottom:none;background:var(--s2);color:var(--ink3);transition:all 0.15s}
+.tab-btn.active{background:var(--white);color:var(--ink);border-color:var(--brd)}
+.tab-btn:hover{color:var(--ink)}
+
 /* TOAST */
 .toast{
   position:fixed;bottom:12px;right:12px;background:var(--white);
@@ -235,6 +241,10 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   </div>
   <input type="file" id="fi" accept=".csv" multiple onchange="cargarCSVMultiple(this)"/>
 
+  <div class="tabs-bar" id="tabs-bar" style="display:none;padding:6px 10px 0;background:var(--bg);gap:4px;display:none;flex-shrink:0">
+    <button class="tab-btn active" onclick="switchTab('liverpool')">🔴 Liverpool BT OMS</button>
+    <button class="tab-btn" onclick="switchTab('suburbia')">🔵 Suburbia</button>
+  </div>
   <div class="grid" id="dc" style="display:none">
 
     <div class="row-kpis" id="krow"></div>
@@ -303,6 +313,72 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     </div>
 
   </div>
+
+  <!-- SUBURBIA GRID -->
+  <div class="grid" id="dc-sub" style="display:none">
+    <div class="row-kpis" id="krow-sub"></div>
+    <div class="col-s1">
+      <div class="scard">
+        <div class="scard-head">
+          <span style="font-size:15px">&#128308;</span>
+          <span class="scard-title">S1 — FEE Vencida</span>
+          <span class="pill pill-red" id="s1b-sub">0 líneas</span>
+        </div>
+        <div class="mkrow" id="k1-sub"></div>
+        <div class="yrow" id="y1-sub" style="overflow-x:auto;flex-wrap:nowrap"></div>
+        <div class="chart-area">
+          <div class="chart-label">Tendencia en CEDIS — En locación de entrega</div>
+          <div class="chart-wrap"><canvas id="cs1-sub"></canvas></div>
+          <div class="so-row" id="so1-sub"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-s2">
+      <div class="scard">
+        <div class="scard-head">
+          <span style="font-size:15px">&#128993;</span>
+          <span class="scard-title">S2 — Promesa Vencida</span>
+          <span class="pill pill-amber" id="s2b-sub">0 líneas</span>
+        </div>
+        <div class="mkrow" id="k2-sub"></div>
+        <div class="yrow" id="y2-sub" style="overflow-x:auto;flex-wrap:nowrap"></div>
+        <div class="chart-area">
+          <div class="chart-label">Tendencia en CEDIS — En locación de entrega</div>
+          <div class="chart-wrap"><canvas id="cs2-sub"></canvas></div>
+          <div class="so-row" id="so2-sub"></div>
+        </div>
+      </div>
+    </div>
+    <div class="row-grupos">
+      <div class="gcard" style="max-width:180px;flex-shrink:0">
+        <div class="gcard-title">&#128230; Top 3 Grupos · S1 CEDIS</div>
+        <div class="gitems" id="gitems-sub"></div>
+      </div>
+      <div class="gcard">
+        <div class="gcard-title" style="display:flex;align-items:center;gap:6px">
+          &#9201; Órdenes rezagadas — S2
+          <span class="pill pill-amber" id="rez-count-sub" style="margin-left:2px">0</span>
+          <select id="rez-filter-sub" onchange="aplicarFiltroRez('sub')" style="margin-left:4px;padding:2px 6px;border:1px solid var(--brd2);border-radius:4px;font-size:10px;color:var(--ink2);background:var(--white);cursor:pointer;max-width:120px">
+            <option value="">Todos los estatus</option>
+          </select>
+          <button onclick="descargarRezagadasSub()" style="margin-left:auto;padding:2px 8px;border:1px solid var(--brd2);border-radius:4px;background:var(--white);color:var(--ink2);font-size:10px;cursor:pointer">&#8595; CSV</button>
+        </div>
+        <div class="rezagadas-wrap" id="rezagadas-sub"></div>
+      </div>
+      <div class="gcard">
+        <div class="gcard-title" style="display:flex;align-items:center;gap:6px">
+          &#9888; Sin Fecha Promesa
+          <span class="pill pill-red" id="s3b-sub" style="margin-left:4px">0</span>
+          <select id="s3-filter-sub" onchange="aplicarFiltroS3('sub')" style="margin-left:4px;padding:2px 6px;border:1px solid var(--brd2);border-radius:4px;font-size:10px;color:var(--ink2);background:var(--white);cursor:pointer;max-width:120px">
+            <option value="">Todos los estatus</option>
+          </select>
+          <button onclick="descargarS3Sub()" style="margin-left:auto;padding:2px 8px;border:1px solid var(--brd2);border-radius:4px;background:var(--white);color:var(--ink2);font-size:10px;cursor:pointer">&#8595; CSV</button>
+        </div>
+        <div class="rezagadas-wrap" id="s3lista-sub"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div id="auth-modal" style="display:none;position:fixed;inset:0;background:rgba(17,24,39,0.6);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
@@ -328,8 +404,8 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 
 <script>
 var SK='oms_v8';
-function gh(){try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];}}
-function sh(h){try{localStorage.setItem(SK,JSON.stringify(h));}catch(e){}}
+function gh(sfx){var k=SK+(sfx||'');try{return JSON.parse(localStorage.getItem(k)||'[]');}catch(e){return[];}}
+function sh(sfx,h){if(h===undefined){h=sfx;sfx='';}var k=SK+(sfx||'');try{localStorage.setItem(k,JSON.stringify(h));}catch(e){}}
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast show '+(t||'');setTimeout(function(){el.className='toast';},3200);}
 
 var ups=document.getElementById('ups');
@@ -373,26 +449,50 @@ async function leerCarpeta(){
   var fill = document.getElementById('pgf');
   barra.style.display='block'; fill.style.width='10%';
 
+  // Liverpool BT: 2024.csv, 2025.csv, 2026.csv
   for(var anio of ['2024','2025','2026']){
     try{
       var fh = await dirHandle.getFileHandle(anio+'.csv');
       var file = await fh.getFile();
       archivos.push({file:file, anio:anio});
       fill.style.width = (archivos.length/3*60+10)+'%';
-    } catch(e){
-      console.log('No se encontró '+anio+'.csv en la carpeta');
-    }
+    } catch(e){}
   }
+
+  // Suburbia: suburbia.csv (archivo único)
+  var subFile = null;
+  try{
+    var sfh = await dirHandle.getFileHandle('suburbia.csv');
+    subFile = await sfh.getFile();
+  } catch(e){}
 
   barra.style.display='none';
 
-  if(!archivos.length){
-    toast('No se encontraron archivos 2024.csv, 2025.csv o 2026.csv en la carpeta','err');
+  if(!archivos.length && !subFile){
+    toast('No se encontraron archivos en la carpeta','err');
     return;
   }
 
-  toast('Leyendo '+archivos.length+' archivo(s)...','ok');
-  await procesarMultiplesArchivos(archivos.map(function(a){return a.file;}));
+  // Procesar Liverpool si hay archivos
+  if(archivos.length){
+    toast('Leyendo Liverpool BT: '+archivos.length+' archivo(s)...','ok');
+    await procesarMultiplesArchivos(archivos.map(function(a){return a.file;}));
+  }
+
+  // Procesar Suburbia si existe
+  if(subFile){
+    toast('Leyendo Suburbia...','ok');
+    await new Promise(function(resolve){
+      Papa.parse(subFile,{header:true,skipEmptyLines:true,
+        complete:function(res){
+          calcularSub(res.data);
+          document.getElementById('tabs-bar').style.display='flex';
+          resolve();
+        },
+        error:function(){resolve();}
+      });
+    });
+  }
 }
 
 async function procesarMultiplesArchivos(files){
@@ -426,7 +526,19 @@ async function procesarMultiplesArchivos(files){
     return;
   }
 
-  calcular(todosSobrios);
+  // Detectar si es Suburbia o Liverpool BT
+  var esSuburbia = todosSobrios.length>0 && 
+    !todosSobrios[0].hasOwnProperty('Locación Seguimiento') && 
+    todosSobrios[0].hasOwnProperty('Última Locación') &&
+    !todosSobrios[0].hasOwnProperty('LINEAS');
+  if(esSuburbia){
+    calcularSub(todosSobrios);
+    switchTab('suburbia');
+  } else {
+    calcular(todosSobrios);
+    switchTab('liverpool');
+  }
+  document.getElementById('tabs-bar').style.display='flex';
 }
 
 var MS={ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11};
@@ -584,11 +696,11 @@ function calcular(rows){
     }
   };
 
-  var hist=gh();
+  var hist=gh('');
   var idx=hist.findIndex(function(h){return h.fecha===fs;});
   if(idx>=0)hist[idx]=snap;else hist.unshift(snap);
   if(hist.length>90)hist=hist.slice(0,90);
-  sh(hist);
+  sh('',hist);
   render(hist);
   document.getElementById('btn-actualizar').style.display='flex';
   toast('✓ '+Math.round(total).toLocaleString()+' líneas procesadas · S1: '+Math.round(snap.s1.total)+' · S2: '+Math.round(snap.s2.total),'ok');
@@ -699,10 +811,10 @@ function render(hist){
   var gtop=Object.entries(grupos).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
   var gmax=gtop.length?gtop[0][1]:1;
   var GCOLS=['#BE185D','#92400E','#1E40AF','#166534','#6B21A8','#0F766E','#B45309','#0369A1','#7C3AED','#047857','#DC2626','#D97706','#1D4ED8','#065F46','#9333EA','#0891B2','#C026D3','#64748B'];
-  var gtotal=gtop.reduce(function(a,e){return a+e[1];},0);
+  var gtotalAll=Object.values(grupos).reduce(function(a,v){return a+v;},0);
   document.getElementById('gitems').innerHTML=gtop.map(function(e,i){
     var hpct=Math.round((e[1]/gmax)*100);
-    var ppct=gtotal>0?Math.round((e[1]/gtotal)*100):0;
+    var ppct=gtotalAll>0?Math.round((e[1]/gtotalAll)*100):0;
     var name=e[0].length>12?e[0].substring(0,11)+'…':e[0];
     return '<div class="gitem">'
       +'<div class="gval">'+Math.round(e[1])+'</div>'
@@ -894,6 +1006,190 @@ function descargarS3(){
   var b=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='sin_fecha_'+hist[0].fecha.replace(/[/]/g,'-')+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);toast('Sin Fecha exportadas','ok');
 }
 
+// ── TABS ──────────────────────────────────────────────────────
+var tabActivo = 'liverpool';
+var _rezDataSub = [], _s3DataSub = [];
+
+function switchTab(tab){
+  tabActivo = tab;
+  document.querySelectorAll('.tab-btn').forEach(function(b,i){
+    b.classList.toggle('active', (i===0&&tab==='liverpool')||(i===1&&tab==='suburbia'));
+  });
+  document.getElementById('dc').style.display     = tab==='liverpool'?'grid':'none';
+  document.getElementById('dc-sub').style.display = tab==='suburbia'?'grid':'none';
+}
+
+function calcularSub(rows){
+  var hoyD=new Date();hoyD.setHours(0,0,0,0);
+  var fs=hoyD.toLocaleDateString('es-MX',{year:'numeric',month:'2-digit',day:'2-digit'});
+
+  // Suburbia: filtrar 0185 por Última Locación
+  var data=rows.filter(function(r){
+    var l=r['Última Locación']||r['Ultima Locacion']||'';
+    return l.indexOf('0185')>=0;
+  });
+  if(!data.length) data=rows;
+
+  // En Suburbia Estatus=EstSO, Pendiente=no Entregado
+  var entR=data.filter(function(r){return (r.Estatus||'').trim().toLowerCase()==='entregado';});
+  var pendR=data.filter(function(r){return (r.Estatus||'').trim().toLowerCase()!=='entregado';});
+  var ent=entR.reduce(function(a,r){return a+nl2(r);},0);
+  var pend=pendR.reduce(function(a,r){return a+nl2(r);},0);
+  var total=data.reduce(function(a,r){return a+nl2(r);},0);
+
+  var feeOk=entR.filter(function(r){var f=(r['Cumplimiento FEE homologado entregadas']||'').toLowerCase();return f.indexOf('en tiempo')>=0||f.indexOf('en fecha')>=0;}).reduce(function(a,r){return a+nl2(r);},0);
+  var feePct=ent>0?Math.round((feeOk/ent)*1000)/10:0;
+
+  var s1R=pendR.filter(function(r){return (r['Cumplimiento FEE homologado pendientes']||'').toLowerCase().indexOf('vencida')>=0;});
+  var s2R=pendR.filter(function(r){
+    var fp=pf(r['Fecha Promesa Actualizada']||'');
+    if(!fp)return false;fp.setHours(0,0,0,0);return fp<hoyD;
+  });
+  var s3R=pendR.filter(function(r){return !pf(r['Fecha Promesa Actualizada']||'');});
+
+  function sum2(arr){return arr.reduce(function(a,r){return a+nl2(r);},0);}
+  function cso2(arr,kw){return arr.filter(function(r){return (r.Estatus||'').toLowerCase().indexOf(kw)>=0;}).reduce(function(a,r){return a+nl2(r);},0);}
+  function gso2(arr){var g={};arr.forEach(function(r){var s=(r.Estatus||'—').trim();g[s]=(g[s]||0)+nl2(r);});return g;}
+  function ganio2(arr){var g={};arr.forEach(function(r){var a=anio(r['Fecha Emisión']||'');if(a)g[a]=(g[a]||0)+nl2(r);});return g;}
+  function gmes2(arr){var g={};arr.forEach(function(r){var d=pf(r['Fecha Emisión']||'');if(!d)return;var t=Math.floor(d.getMonth()/3)+1;var k=d.getFullYear()+'-T'+t;var lbl='T'+t+' '+d.getFullYear();if(!g[k])g[k]={lbl:lbl,v:0};g[k].v+=nl2(r);});return g;}
+  function gmesPr2(arr){var g={};arr.forEach(function(r){var d=pf(r['Fecha Promesa Actualizada']||'');if(!d)return;var t=Math.floor(d.getMonth()/3)+1;var k=d.getFullYear()+'-T'+t;var lbl='T'+t+' '+d.getFullYear();if(!g[k])g[k]={lbl:lbl,v:0};g[k].v+=nl2(r);});return g;}
+
+  // Grupos S1 CEDIS
+  var s1CedisR=s1R.filter(function(r){return (r.Estatus||'').toLowerCase().indexOf('entrega')>=0;});
+  var ggrupos={};
+  s1CedisR.forEach(function(r){var g=(r['Grupo de Artículo']||r['Grupo de Articulo']||'Sin grupo').trim().replace(/^\d+\s*-\s*/,'');ggrupos[g]=(ggrupos[g]||0)+nl2(r);});
+
+  var snap={
+    fecha:fs,total:total,ent:ent,pend:pend,feePct:feePct,
+    s1:{total:sum2(s1R),cedis:cso2(s1R,'entrega'),transf:cso2(s1R,'transferencia'),sinDisp:cso2(s1R,'sin disponibilidad'),so:gso2(s1R),meses:gmes2(s1R),grupos:ggrupos,
+      det:s1R.slice(0,2000).map(function(r){return{em:r['Fecha Emisión']||'-',anio:anio(r['Fecha Emisión']||'')||'-',linea:(r['LINEA (SO-SKU-SHIP)']||'-'),sku:(r['Descripción SKU']||'-'),pr:r['Fecha Promesa Actualizada']||'-',so:(r.Estatus||'-'),fee:(r['Cumplimiento FEE homologado pendientes']||'-'),cambios:parseInt(r['# Cambio Fechas']||0)||0,imp:parseFloat(r['Importe pagado']||r['Importe Pagado'])||0,lineas:nl2(r)};})
+    },
+    s2:{total:sum2(s2R),cedis:cso2(s2R,'entrega'),transf:cso2(s2R,'transferencia'),sinDisp:cso2(s2R,'sin disponibilidad'),so:gso2(s2R),meses:gmesPr2(s2R),
+      det:s2R.slice(0,2000).map(function(r){var fp=pf(r['Fecha Promesa Actualizada']||'');var dv=fp?(function(){var h2=new Date();h2.setHours(0,0,0,0);fp.setHours(0,0,0,0);return Math.max(0,Math.floor((h2-fp)/864e5));})()):0;return{em:r['Fecha Emisión']||'-',anio:anio(r['Fecha Emisión']||'')||'-',linea:(r['LINEA (SO-SKU-SHIP)']||'-'),sku:(r['Descripción SKU']||'-'),pr:r['Fecha Promesa Actualizada']||'-',dias:dv,so:(r.Estatus||'-'),cambios:parseInt(r['# Cambio Fechas']||0)||0,imp:parseFloat(r['Importe pagado']||r['Importe Pagado'])||0,lineas:nl2(r)};})
+    },
+    s3:{total:sum2(s3R),cedis:cso2(s3R,'entrega'),transf:cso2(s3R,'transferencia'),
+      det:s3R.slice(0,2000).map(function(r){return{em:r['Fecha Emisión']||'-',linea:(r['LINEA (SO-SKU-SHIP)']||'-'),sku:(r['Descripción SKU']||'-'),so:(r.Estatus||'-'),cambios:parseInt(r['# Cambio Fechas']||0)||0,fee:(r['Cumplimiento FEE homologado pendientes']||'-'),imp:parseFloat(r['Importe pagado']||r['Importe Pagado'])||0};})
+    }
+  };
+
+  var hist=gh('sub');
+  var idx=hist.findIndex(function(h){return h.fecha===fs;});
+  if(idx>=0)hist[idx]=snap;else hist.unshift(snap);
+  if(hist.length>90)hist=hist.slice(0,90);
+  sh('sub',hist);
+  renderSub(hist);
+  document.getElementById('tabs-bar').style.display='flex';
+  document.getElementById('btn-actualizar').style.display='flex';
+  toast('✓ Suburbia: '+Math.round(total).toLocaleString()+' líneas · S1:'+Math.round(snap.s1.total)+' · S2:'+Math.round(snap.s2.total),'ok');
+}
+
+function nl2(r){return parseFloat(r['Lineas']||r['LINEAS']||1)||1;}
+
+function gh(suffix){var k=SK+(suffix||'');try{return JSON.parse(localStorage.getItem(k)||'[]');}catch(e){return[];}}
+function sh(suffix,h){var k=SK+(suffix||'');try{localStorage.setItem(k,JSON.stringify(h));}catch(e){}}
+
+function renderSub(hist){
+  if(!hist.length)return;
+  var h=hist[0],y=hist.length>1?hist[1]:null;
+  document.getElementById('dc-sub').style.display='grid';
+
+  var dEnt=y?dl(h.ent,y.ent,false):{t:'',c:'neu'};
+  var dPend=y?dl(h.pend,y.pend,true):{t:'',c:'neu'};
+  var dFee=y?dl(h.feePct,y.feePct,false):{t:'',c:'neu'};
+  document.getElementById('krow-sub').innerHTML=[
+    {c:'c-pink',l:'Total Líneas',v:fmt(h.total),d:{t:'',c:'neu'}},
+    {c:'c-grn', l:'Entregadas',  v:fmt(h.ent),  d:dEnt},
+    {c:'c-amber',l:'Pendientes', v:fmt(h.pend), d:dPend},
+    {c:'c-blue', l:'%FEE',v:h.feePct+'%',d:{t:dFee.t?(dFee.t.replace(/\d+/,function(n){return n+'%'})):'',c:dFee.c}}
+  ].map(function(k){return '<div class="chip '+k.c+'"><div style="display:flex;align-items:baseline;gap:8px"><div class="chip-value">'+k.v+'</div><div class="chip-label">'+k.l+'</div></div>'+(k.d.t?'<div class="chip-delta '+k.d.c+'">'+k.d.t+'</div>':'')+'</div>';}).join('');
+
+  document.getElementById('s1b-sub').textContent=fmt(h.s1.total)+' líneas';
+  document.getElementById('k1-sub').innerHTML=mkMini([
+    {c:'c-red',l:'Total',v:h.s1.total,p:y?y.s1.total:null,inv:true},
+    {c:'c-grn',l:'CEDIS',v:h.s1.cedis,p:y?y.s1.cedis:null,inv:true},
+    {c:'c-amber',l:'Transf.',v:h.s1.transf,p:y?y.s1.transf:null,inv:true},
+    {c:'c-pur',l:'Sin Disp.',v:h.s1.sinDisp,p:y?y.s1.sinDisp:null,inv:true}
+  ]);
+  renderMeses('y1-sub',h.s1.meses||{});
+
+  var fechas=hist.map(function(x){return x.fecha.substring(0,5);}).reverse();
+  dc2('cs1-sub');
+  CH['cs1-sub']=new Chart(document.getElementById('cs1-sub'),{type:'line',data:{labels:fechas,datasets:[{label:'CEDIS',data:hist.map(function(x){return Math.round(x.s1.cedis);}).reverse(),borderColor:'#BE185D',backgroundColor:'rgba(190,24,93,0.08)',tension:0.35,pointRadius:hist.length>1?3:5,pointBackgroundColor:'#BE185D',borderWidth:2.5,fill:true}]},options:{...BASE,plugins:{legend:{display:false}}}});
+  renderSO('so1-sub',h.s1.so,h.s1.total);
+
+  document.getElementById('s2b-sub').textContent=fmt(h.s2.total)+' líneas';
+  document.getElementById('k2-sub').innerHTML=mkMini([
+    {c:'c-amber',l:'Total',v:h.s2.total,p:y?y.s2.total:null,inv:true},
+    {c:'c-grn',l:'CEDIS',v:h.s2.cedis,p:y?y.s2.cedis:null,inv:true},
+    {c:'c-teal',l:'Transf.',v:h.s2.transf,p:y?y.s2.transf:null,inv:true},
+    {c:'c-pur',l:'Sin Disp.',v:h.s2.sinDisp,p:y?y.s2.sinDisp:null,inv:true}
+  ]);
+  renderMeses('y2-sub',h.s2.meses||{});
+  dc2('cs2-sub');
+  CH['cs2-sub']=new Chart(document.getElementById('cs2-sub'),{type:'line',data:{labels:fechas,datasets:[{label:'CEDIS',data:hist.map(function(x){return Math.round(x.s2.cedis);}).reverse(),borderColor:'#92400E',backgroundColor:'rgba(146,64,14,0.08)',tension:0.35,pointRadius:hist.length>1?3:5,pointBackgroundColor:'#92400E',borderWidth:2.5,fill:true}]},options:{...BASE,plugins:{legend:{display:false}}}});
+  renderSO('so2-sub',h.s2.so,h.s2.total);
+
+  // Rezagadas sub
+  _rezDataSub=h.s2.det.filter(function(r){var fp=pf(r.pr);var hoy2=new Date();hoy2.setHours(0,0,0,0);return fp&&fp<hoy2;}).map(function(r){var fp=pf(r.pr);var parts=(r.linea||'').split('-');return{dias:Math.floor((new Date()-fp)/864e5),pr:r.pr,ov:parts[0]||'',skuNum:parts[1]||'',desc:r.sku,so:r.so,cambios:r.cambios||0};}).sort(function(a,b){return b.dias-a.dias;});
+  var soU=[];_rezDataSub.forEach(function(r){if(soU.indexOf(r.so)<0)soU.push(r.so);});soU.sort();
+  var sf=document.getElementById('rez-filter-sub');sf.innerHTML='<option value="">Todos ('+_rezDataSub.length+')</option>'+soU.map(function(s){return '<option value="'+s+'">'+soShortFn(s)+'</option>';}).join('');
+  aplicarFiltroRez('sub');
+
+  // S3 sub
+  _s3DataSub=(h.s3.det||[]).map(function(r){var parts=(r.linea||'').split('-');return{em:r.em,ov:parts[0]||'',skuNum:parts[1]||'',desc:r.sku,so:r.so,cambios:r.cambios||0};});
+  document.getElementById('s3b-sub').textContent=fmt(h.s3.total||0);
+  var soU3=[];_s3DataSub.forEach(function(r){if(soU3.indexOf(r.so)<0)soU3.push(r.so);});soU3.sort();
+  var sf3=document.getElementById('s3-filter-sub');sf3.innerHTML='<option value="">Todos ('+_s3DataSub.length+')</option>'+soU3.map(function(s){return '<option value="'+s+'">'+soShortFn(s)+'</option>';}).join('');
+  aplicarFiltroS3('sub');
+
+  // Grupos sub
+  var grupos=h.s1.grupos||{};
+  var gtop=Object.entries(grupos).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
+  var gmax=gtop.length?gtop[0][1]:1;
+  var gtotalAll=Object.values(grupos).reduce(function(a,v){return a+v;},0);
+  var GCOLS=['#BE185D','#92400E','#1E40AF'];
+  document.getElementById('gitems-sub').innerHTML=gtop.map(function(e,i){
+    var hpct=Math.round((e[1]/gmax)*100);
+    var ppct=gtotalAll>0?Math.round((e[1]/gtotalAll)*100):0;
+    var name=e[0].length>12?e[0].substring(0,11)+'…':e[0];
+    return '<div class="gitem"><div class="gval">'+Math.round(e[1])+'</div><div class="gpct">'+ppct+'%</div><div class="gbar-bg"><div class="gbar" style="height:'+hpct+'%;background:'+GCOLS[i%GCOLS.length]+'"></div></div><div class="gname" title="'+e[0]+'">'+name+'</div></div>';
+  }).join('');
+}
+
+function aplicarFiltroRez(suffix){
+  var sfx=suffix||'';
+  var data=sfx==='sub'?_rezDataSub:_rezData;
+  var filtro=document.getElementById('rez-filter'+(sfx?'-'+sfx:'')).value;
+  var rows=filtro?data.filter(function(r){return r.so===filtro;}):data;
+  document.getElementById('rez-count'+(sfx?'-'+sfx:'')).textContent=rows.length+' órdenes';
+  var el=document.getElementById('rezagadas'+(sfx?'-'+sfx:''));
+  if(!rows.length){el.innerHTML='<div style="color:var(--ink3);font-size:11px;padding:8px">Sin órdenes</div>';return;}
+  el.innerHTML=rows.map(function(r){return '<div class="rez-row"><span class="rez-dias">'+r.dias+'d</span><span class="rez-promesa">'+r.pr+'</span><span class="rez-ov">'+r.ov.substring(0,10)+'</span><span class="rez-sku2">'+r.skuNum.substring(0,10)+'</span><span class="rez-sku">'+r.desc+'</span><span class="rez-cambios">'+r.cambios+'</span><span class="rez-so '+soCls(r.so)+'">'+soShortFn(r.so)+'</span></div>';}).join('');
+}
+
+function aplicarFiltroS3(suffix){
+  var sfx=suffix||'';
+  var data=sfx==='sub'?_s3DataSub:_s3Data;
+  var filtro=document.getElementById('s3-filter'+(sfx?'-'+sfx:'')).value;
+  var rows=filtro?data.filter(function(r){return r.so===filtro;}):data;
+  document.getElementById('s3b'+(sfx?'-'+sfx:'')).textContent=rows.length;
+  var el=document.getElementById('s3lista'+(sfx?'-'+sfx:''));
+  if(!rows.length){el.innerHTML='<div style="color:var(--ink3);font-size:11px;padding:8px">✅ Sin órdenes</div>';return;}
+  el.innerHTML=rows.map(function(r){return '<div class="rez-row"><span class="rez-promesa" style="color:var(--pur)">'+r.em+'</span><span class="rez-ov">'+r.ov.substring(0,10)+'</span><span class="rez-sku2">'+r.skuNum.substring(0,10)+'</span><span class="rez-sku">'+r.desc+'</span><span class="rez-cambios">'+r.cambios+'</span><span class="rez-so '+soCls(r.so)+'">'+soShortFn(r.so)+'</span></div>';}).join('');
+}
+
+function descargarRezagadasSub(){
+  var hist=gh('sub');if(!hist.length){toast('Sin datos','err');return;}
+  var rows=['Días Vencida,Fecha Promesa,OV,SKU,Estatus,Importe'];
+  _rezDataSub.forEach(function(r){rows.push([r.dias,csvEsc(r.pr),csvEsc(r.ov),csvEsc(r.desc),csvEsc(r.so),''].join(','));});
+  var b=new Blob([rows.join('\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='suburbia_rezagadas.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);toast('Exportado','ok');
+}
+function descargarS3Sub(){
+  var rows=['Fecha Emisión,OV,SKU,Estatus,Importe'];
+  _s3DataSub.forEach(function(r){rows.push([csvEsc(r.em),csvEsc(r.ov),csvEsc(r.desc),csvEsc(r.so),''].join(','));});
+  var b=new Blob([rows.join('\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='suburbia_sin_fecha.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);toast('Exportado','ok');
+}
+
 // ── AUTENTICACIÓN ─────────────────────────────────────────────
 var AUTH_KEY = btoa('Rocalet7');
 var authPendingAction = null;
@@ -944,10 +1240,13 @@ async function actualizarDatos(){
   }
 }
 
-function limpiar(){if(!confirm('¿Borrar todo el historial guardado?'))return;localStorage.removeItem(SK);location.reload();}
+function limpiar(){if(!confirm('¿Borrar todo el historial guardado?'))return;localStorage.removeItem(SK);localStorage.removeItem(SK+'sub');location.reload();}
 window.addEventListener('load',async function(){
-  var h=gh();
-  if(h.length) render(h);
+  var h=gh('');
+  if(h.length){ render(h); document.getElementById('tabs-bar').style.display='flex'; }
+  var hSub=gh('sub');
+  if(hSub.length){ renderSub(hSub); document.getElementById('tabs-bar').style.display='flex'; }
+  if(h.length&&hSub.length) switchTab('liverpool');
   // Mostrar botón carpeta si ya hay una vinculada
   var dirName = localStorage.getItem('oms_dir_name');
   if(dirName){
