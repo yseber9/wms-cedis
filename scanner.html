@@ -2,225 +2,159 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scanner WMS</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#000;color:#fff;font-family:'Inter',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-@keyframes scanLine{0%{top:5%}50%{top:90%}100%{top:5%}}
-@keyframes flashOk{0%{opacity:0.8}100%{opacity:0}}
-.header{padding:12px 16px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.85);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}
-.titulo{font-size:14px;font-weight:700;flex:1}
-.badge{font-size:11px;background:rgba(79,70,229,0.6);padding:3px 10px;border-radius:20px;font-weight:600}
-.btn-cerrar{width:34px;height:34px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.video-wrap{flex:1;position:relative;overflow:hidden;background:#000}
-#video{width:100%;height:100%;object-fit:cover;display:block}
-.vignette{position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(to right,rgba(0,0,0,0.5) 0%,transparent 20%,transparent 80%,rgba(0,0,0,0.5) 100%),
-             linear-gradient(to bottom,rgba(0,0,0,0.5) 0%,transparent 18%,transparent 82%,rgba(0,0,0,0.5) 100%)}
-.visor{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.visor-box{position:relative;width:80%;max-width:320px;height:160px}
-.visor-box::before,.visor-box::after,.visor-box .c2::before,.visor-box .c2::after{
-  content:'';position:absolute;width:28px;height:28px;border-color:#4F46E5;border-style:solid}
-.visor-box::before{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
-.visor-box::after{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
-.visor-box .c2::before{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
-.visor-box .c2::after{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
-.laser{position:absolute;left:4px;right:4px;height:2px;top:5%;
-  background:linear-gradient(90deg,transparent,#ff0000,#ff4444,#ff0000,transparent);
-  box-shadow:0 0 8px 2px rgba(255,0,0,0.7);
-  animation:scanLine 1.8s ease-in-out infinite}
-.flash{display:none;position:absolute;inset:0;background:rgba(52,211,153,0.4);pointer-events:none}
-.flash.on{display:block;animation:flashOk 0.5s ease forwards}
-.estado-wrap{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;pointer-events:none}
-.estado-pill{background:rgba(0,0,0,0.75);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:5px 16px;font-size:12px;color:rgba(255,255,255,0.8);font-weight:500}
-.footer{padding:12px 16px 16px;background:rgba(0,0,0,0.9);border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0}
-.hint{font-size:11px;color:rgba(255,255,255,0.35);text-align:center;margin-bottom:10px}
-.manual-row{display:flex;gap:8px}
-.manual-inp{flex:1;padding:12px 14px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:14px;outline:none;font-family:sans-serif;text-transform:uppercase;letter-spacing:1px}
-.manual-inp:focus{border-color:rgba(79,70,229,0.7)}
-.manual-inp::placeholder{color:rgba(255,255,255,0.25);text-transform:none;letter-spacing:0}
-.ok-btn{padding:12px 18px;background:#4F46E5;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer}
+body{font-family:'Segoe UI',sans-serif;background:#111827;color:#fff;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.header{position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.7);padding:12px 16px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px)}
+.header-title{font-size:14px;font-weight:700;color:#fff}
+.header-tab{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:600}
+.tab-entrada{background:#059669;color:#fff}
+.tab-salida{background:#DC2626;color:#fff}
+.video-wrap{position:relative;width:100vw;height:100vh;overflow:hidden}
+video{width:100%;height:100%;object-fit:cover}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.scan-frame{width:260px;height:260px;position:relative}
+.scan-frame::before,.scan-frame::after{content:'';position:absolute;width:40px;height:40px;border-color:#BE185D;border-style:solid}
+.scan-frame::before{top:0;left:0;border-width:4px 0 0 4px;border-radius:4px 0 0 0}
+.scan-frame::after{bottom:0;right:0;border-width:0 4px 4px 0;border-radius:0 0 4px 0}
+.corner-tr{position:absolute;top:0;right:0;width:40px;height:40px;border-top:4px solid #BE185D;border-right:4px solid #BE185D;border-radius:0 4px 0 0}
+.corner-bl{position:absolute;bottom:0;left:0;width:40px;height:40px;border-bottom:4px solid #BE185D;border-left:4px solid #BE185D;border-radius:0 0 0 4px}
+.scan-line{position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,#BE185D,transparent);animation:scan 2s linear infinite;top:10px}
+@keyframes scan{0%{top:10px}100%{top:calc(100% - 10px)}}
+.hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap}
+.hint-text{font-size:12px;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.5);padding:6px 14px;border-radius:20px}
+.result-banner{position:fixed;bottom:0;left:0;right:0;background:#059669;padding:16px 20px;transform:translateY(100%);transition:transform 0.3s;text-align:center}
+.result-banner.show{transform:translateY(0)}
+.result-code{font-family:monospace;font-size:20px;font-weight:700}
+.result-msg{font-size:12px;opacity:0.8;margin-top:4px}
+.error-msg{position:fixed;top:60px;left:16px;right:16px;background:#DC2626;padding:12px 16px;border-radius:8px;font-size:13px;text-align:center;display:none}
+.error-msg.show{display:block}
+.btn-manual{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 20px;border-radius:20px;font-size:12px;cursor:pointer;backdrop-filter:blur(10px)}
 </style>
 </head>
 <body>
+
 <div class="header">
-  <button class="btn-cerrar" onclick="cancelar()">&#8249;</button>
-  <span class="titulo" id="titulo">Escanear</span>
-  <span class="badge" id="badge">-</span>
+  <div class="header-title">ðŸ“· Scanner WMS CEDIS</div>
+  <div class="header-tab" id="tab-label">Entrada</div>
 </div>
+
 <div class="video-wrap">
-  <video id="video" playsinline autoplay muted></video>
-  <div class="vignette"></div>
-  <div class="visor"><div class="visor-box"><div class="c2"></div><div class="laser"></div></div></div>
-  <div class="flash" id="flash"></div>
-  <div class="estado-wrap"><div class="estado-pill" id="estado">Iniciando camara...</div></div>
-</div>
-<div class="footer">
-  <div class="hint">Centra el codigo en el recuadro · o escribe manualmente</div>
-  <div class="manual-row">
-    <input class="manual-inp" id="manual" type="text" placeholder="Escribe el codigo aqui" autocapitalize="characters" autocorrect="off"/>
-    <button class="ok-btn" onclick="confirmarManual()">OK</button>
+  <video id="video" autoplay playsinline muted></video>
+  <div class="overlay">
+    <div class="scan-frame">
+      <div class="corner-tr"></div>
+      <div class="corner-bl"></div>
+      <div class="scan-line"></div>
+    </div>
+  </div>
+  <div class="hint">
+    <div class="hint-text">Apunta la cÃ¡mara al cÃ³digo de barras</div>
   </div>
 </div>
 
+<div class="result-banner" id="result-banner">
+  <div class="result-code" id="result-code"></div>
+  <div class="result-msg" id="result-msg">CÃ³digo enviado al WMS âœ“</div>
+</div>
+
+<div class="error-msg" id="error-msg"></div>
+
+<button class="btn-manual" onclick="ingresarManual()">âŒ¨ Ingresar cÃ³digo manual</button>
+
 <script>
-var params  = new URLSearchParams(window.location.search);
-var campo   = params.get('campo') || 'hu';
-var labels  = {hu:'HU', ov:'OV', sku:'SKU', buscar:'HU / SKU', ubi:'Ubicacion'};
-var lbl     = labels[campo] || campo.toUpperCase();
+var params = new URLSearchParams(window.location.search);
+var tab = params.get('tab') || 'entrada';
+var channel = new BroadcastChannel('wms-scanner');
+var ultimoCodigo = '';
+var cooldown = false;
 
-document.getElementById('badge').textContent  = lbl;
-document.getElementById('titulo').textContent = 'Escanear ' + lbl;
+// Tab label
+var tabLabel = document.getElementById('tab-label');
+tabLabel.textContent = tab === 'salida' ? 'Salida' : 'Entrada';
+tabLabel.className = 'header-tab ' + (tab === 'salida' ? 'tab-salida' : 'tab-entrada');
 
-var detectado    = false;
-var streamActivo = null;
-var animFrame    = null;
-
-// BroadcastChannel — canal compartido con el WMS
-var canal = null;
-try{ canal = new BroadcastChannel('wms_scanner'); }catch(e){}
-
-function setEstado(t){ document.getElementById('estado').textContent = t; }
-
-function beepExito(){
-  try{
-    var AC = window.AudioContext || window.webkitAudioContext;
-    var ctx = new AC();
-    [[1047,0],[1319,160],[1760,320]].forEach(function(par){
-      setTimeout(function(){
-        var o=ctx.createOscillator(), g=ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.frequency.value=par[0]; o.type='sine';
-        g.gain.setValueAtTime(0.5, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.2);
-        o.start(); o.stop(ctx.currentTime+0.2);
-      }, par[1]);
+// Iniciar cÃ¡mara
+async function iniciarCamara() {
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
-  }catch(e){}
+    document.getElementById('video').srcObject = stream;
+    iniciarDetector();
+  } catch(e) {
+    mostrarError('Error de cÃ¡mara: ' + e.message + '. Verifica los permisos.');
+  }
 }
 
-function enviarCodigo(codigo){
-  if(detectado) return;
-  detectado = true;
-  codigo = String(codigo).trim().toUpperCase();
-
-  // Flash verde
-  var f = document.getElementById('flash');
-  f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
-
-  beepExito();
-  if(navigator.vibrate) navigator.vibrate([80,40,120]);
-  setEstado('Detectado: ' + codigo);
-
-  // Enviar por BroadcastChannel al WMS
-  var msg = { tipo:'scan_resultado', campo:campo, codigo:codigo };
-  if(canal){ canal.postMessage(msg); }
-
-  // Cerrar esta pestaña despues del flash
-  setTimeout(function(){
-    detener();
-    window.close();
-    // Si window.close() no funciona, mostrar el codigo en pantalla
-    document.getElementById('estado').textContent = 'Codigo enviado: ' + codigo;
-  }, 600);
-}
-
-function cancelar(){
-  detener();
-  if(canal) canal.postMessage({ tipo:'scan_cancelado', campo:campo });
-  window.close();
-}
-
-function confirmarManual(){
-  var v = document.getElementById('manual').value.trim();
-  if(!v) return;
-  detener();
-  enviarCodigo(v);
-}
-
-document.getElementById('manual').addEventListener('keydown', function(e){
-  if(e.key==='Enter') confirmarManual();
-});
-
-function detener(){
-  if(animFrame){ cancelAnimationFrame(animFrame); animFrame=null; }
-  if(streamActivo){ streamActivo.getTracks().forEach(function(t){t.stop();}); streamActivo=null; }
-  document.getElementById('video').srcObject = null;
-}
-
-function mostrarError(msg){
-  document.getElementById('video-wrap').style.display = 'none';
-  setEstado(msg || 'Sin camara — escribe manualmente');
-}
-
-async function iniciar(){
-  // BarcodeDetector nativo (Chrome Android — muy preciso)
-  if('BarcodeDetector' in window){
-    try{
-      var formatos = await BarcodeDetector.getSupportedFormats();
-      var detector = new BarcodeDetector({ formats: formatos });
-      var stream = await navigator.mediaDevices.getUserMedia({
-        video:{ facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080} }
-      });
-      streamActivo = stream;
-      var video = document.getElementById('video');
-      video.srcObject = stream;
-      await video.play();
-      setEstado('Centra el codigo en el recuadro');
-
-      async function loop(){
-        if(detectado) return;
-        if(video.videoWidth > 0){
-          try{
-            var barcodes = await detector.detect(video);
-            if(barcodes && barcodes.length > 0){
-              detener();
-              enviarCodigo(barcodes[0].rawValue);
-              return;
-            }
-          }catch(e){}
-        }
-        animFrame = requestAnimationFrame(loop);
-      }
-      loop();
-      return;
-    }catch(e){
-      // Fallback a ZXing
-    }
+// BarcodeDetector nativo
+function iniciarDetector() {
+  if (!('BarcodeDetector' in window)) {
+    mostrarError('Tu navegador no soporta BarcodeDetector. Usa Chrome en Android.');
+    return;
   }
 
-  // ZXing fallback
-  setEstado('Cargando libreria...');
-  var s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js';
-  s.onload = function(){
-    navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}
-    }).then(function(stream){
-      streamActivo = stream;
-      var video = document.getElementById('video');
-      video.srcObject = stream;
-      video.play();
-      setEstado('Centra el codigo en el recuadro');
-      var hints = new Map();
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      var reader = new ZXing.BrowserMultiFormatReader(hints);
-      reader.decodeFromVideoElement(video, function(result){
-        if(result && !detectado){
-          detener();
-          enviarCodigo(result.getText());
+  var detector = new BarcodeDetector({
+    formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'qr_code', 'upc_a', 'upc_e', 'itf', 'codabar']
+  });
+
+  var video = document.getElementById('video');
+
+  function detectar() {
+    if (video.readyState === video.HAVE_ENOUGH_DATA && !cooldown) {
+      detector.detect(video).then(function(codes) {
+        if (codes.length > 0) {
+          var codigo = codes[0].rawValue;
+          if (codigo !== ultimoCodigo) {
+            ultimoCodigo = codigo;
+            enviarCodigo(codigo);
+          }
         }
-      });
-    }).catch(function(err){
-      mostrarError('Error camara: ' + err.name);
-    });
-  };
-  s.onerror = function(){ mostrarError('Error cargando libreria'); };
-  document.head.appendChild(s);
+      }).catch(function() {});
+    }
+    requestAnimationFrame(detectar);
+  }
+  requestAnimationFrame(detectar);
 }
 
-iniciar();
+function enviarCodigo(codigo) {
+  cooldown = true;
+
+  // Enviar por BroadcastChannel al WMS
+  channel.postMessage({ codigo: codigo, tab: tab });
+
+  // Mostrar resultado
+  document.getElementById('result-code').textContent = codigo;
+  document.getElementById('result-msg').textContent = 'CÃ³digo enviado al WMS âœ“ â€” ' + (tab === 'salida' ? 'SALIDA' : 'ENTRADA');
+  document.getElementById('result-banner').classList.add('show');
+
+  // Vibrar si disponible
+  if (navigator.vibrate) navigator.vibrate(100);
+
+  setTimeout(function() {
+    document.getElementById('result-banner').classList.remove('show');
+    ultimoCodigo = '';
+    cooldown = false;
+  }, 2500);
+}
+
+function ingresarManual() {
+  var codigo = prompt('Ingresa el cÃ³digo de barras:');
+  if (codigo && codigo.trim()) {
+    enviarCodigo(codigo.trim());
+  }
+}
+
+function mostrarError(msg) {
+  var el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+iniciarCamara();
 </script>
 </body>
 </html>
+
