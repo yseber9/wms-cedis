@@ -26,7 +26,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .screen{display:none;min-height:100vh;flex-direction:column}
 .screen.active{display:flex}
 @keyframes spin{to{transform:rotate(360deg)}}
-
+ 
 /* LOGIN */
 .login-bg{background:linear-gradient(145deg,#EEF2FF 0%,#F0F4FF 60%,#E0E7FF 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;position:relative;overflow:hidden}
 .login-bg::before{content:'';position:absolute;width:280px;height:280px;background:radial-gradient(circle,rgba(79,70,229,0.07),transparent 70%);top:-80px;right:-60px}
@@ -154,42 +154,42 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 </style>
 </head>
 <body>
-
+ 
 <div id="loading-ov"><div class="big-spinner"></div><p id="loading-msg">Procesando...</p></div>
-
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     CONFIGURACIÃ“N â€” edita solo estas dos lÃ­neas
-     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+ 
+<!-- ══════════════════════════════════════════════════════
+     CONFIGURACIÓN — edita solo estas dos líneas
+     ══════════════════════════════════════════════════ -->
 <script>
 var API_URL     = 'https://script.google.com/macros/s/AKfycbwvWDtT0WKd0T3wVto19aWW4ZtDxZk5oAyAk_rj1gSXXtsyWhHyyYTuYNm2S-FrC6mkKQ/exec';
-var SCANNER_URL = 'https://yseber9.github.io/wms-cedis/scanner.html'; // â† cambia por tu GitHub personal
+var SCANNER_URL = 'https://yseber9.github.io/wms-cedis/scanner.html'; // ← cambia por tu GitHub personal
 </script>
-
+ 
 <!-- LOGIN -->
 <div id="s-login" class="screen active">
   <div class="login-bg">
     <div class="login-logo">
-      <div class="login-logo-mark">ðŸ“¦</div>
+      <div class="login-logo-mark">📦</div>
       <h1>WMS<span>.</span>CEDIS</h1>
-      <p>GestiÃ³n de Inventarios</p>
+      <p>Gestión de Inventarios</p>
     </div>
     <div class="login-card">
       <div id="login-err" class="login-err"></div>
       <div class="field-wrap"><div class="field-lbl">Usuario</div><input class="field-inp" id="inp-user" type="text" placeholder="Alias de acceso" autocomplete="username" autocapitalize="none"/></div>
-      <div class="field-wrap"><div class="field-lbl">ContraseÃ±a</div><input class="field-inp" id="inp-pass" type="password" placeholder="ContraseÃ±a" autocomplete="current-password"/></div>
+      <div class="field-wrap"><div class="field-lbl">Contraseña</div><input class="field-inp" id="inp-pass" type="password" placeholder="Contraseña" autocomplete="current-password"/></div>
       <button class="btn-main" id="btn-login" onclick="doLoginApp()">Ingresar al sistema</button>
-      <button class="btn-test" id="btn-test" onclick="testConexionApp()">Test de conexiÃ³n</button>
+      <button class="btn-test" id="btn-test" onclick="testConexionApp()">Test de conexión</button>
     </div>
   </div>
 </div>
-
+ 
 <!-- MENU -->
 <div id="s-menu" class="screen">
   <div class="app-header">
     <div class="app-header-logo">WMS CEDIS</div>
     <div style="flex:1"></div>
     <span class="user-badge" id="user-badge">-</span>
-    <button class="back-btn" onclick="cerrarSesion()" style="font-size:13px;margin-left:8px">âœ•</button>
+    <button class="back-btn" onclick="cerrarSesion()" style="font-size:13px;margin-left:8px">✕</button>
   </div>
   <div class="menu-content">
     <div class="menu-greeting">
@@ -201,35 +201,35 @@ var SCANNER_URL = 'https://yseber9.github.io/wms-cedis/scanner.html'; // â†
       <div class="mstat"><div class="mstat-lbl">Movimientos</div><div class="mstat-val green" id="stat-mov">-</div></div>
     </div>
     <div class="menu-grid">
-      <div class="menu-card entrada" onclick="irEntrada()"><div class="menu-icon">â†“</div><div class="menu-card-text"><h3>Entrada</h3><p>Registrar ingreso de HU al almacÃ©n</p></div><span style="color:var(--text3)">â€º</span></div>
-      <div class="menu-card salida" onclick="irSalida()"><div class="menu-icon">â†‘</div><div class="menu-card-text"><h3>Salida</h3><p>Dar salida de HU del almacÃ©n</p></div><span style="color:var(--text3)">â€º</span></div>
-      <div class="menu-card inventario" onclick="irInventario()"><div class="menu-icon">â‰¡</div><div class="menu-card-text"><h3>Inventario</h3><p>Consultar stock actual</p></div><span style="color:var(--text3)">â€º</span></div>
-      <div class="menu-card historico" onclick="irHistorico()"><div class="menu-icon">âœŽ</div><div class="menu-card-text"><h3>HistÃ³rico</h3><p>Movimientos del turno y del dÃ­a</p></div><span style="color:var(--text3)">â€º</span></div>
-      <div class="menu-card ubicaciones" onclick="irUbicaciones()"><div class="menu-icon">â›ƒ</div><div class="menu-card-text"><h3>Ubicaciones</h3><p>Mapa y gestiÃ³n de HUs por ubicaciÃ³n</p></div><span style="color:var(--text3)">â€º</span></div>
-      <div id="menu-usuarios" class="menu-card usuarios" onclick="irUsuarios()" style="display:none"><div class="menu-icon">ðŸ‘¤</div><div class="menu-card-text"><h3>Usuarios</h3><p>GestiÃ³n de accesos y permisos</p></div><span style="color:var(--text3)">â€º</span></div>
+      <div class="menu-card entrada" onclick="irEntrada()"><div class="menu-icon">↓</div><div class="menu-card-text"><h3>Entrada</h3><p>Registrar ingreso de HU al almacén</p></div><span style="color:var(--text3)">›</span></div>
+      <div class="menu-card salida" onclick="irSalida()"><div class="menu-icon">↑</div><div class="menu-card-text"><h3>Salida</h3><p>Dar salida de HU del almacén</p></div><span style="color:var(--text3)">›</span></div>
+      <div class="menu-card inventario" onclick="irInventario()"><div class="menu-icon">≡</div><div class="menu-card-text"><h3>Inventario</h3><p>Consultar stock actual</p></div><span style="color:var(--text3)">›</span></div>
+      <div class="menu-card historico" onclick="irHistorico()"><div class="menu-icon">✎</div><div class="menu-card-text"><h3>Histórico</h3><p>Movimientos del turno y del día</p></div><span style="color:var(--text3)">›</span></div>
+      <div class="menu-card ubicaciones" onclick="irUbicaciones()"><div class="menu-icon">⛃</div><div class="menu-card-text"><h3>Ubicaciones</h3><p>Mapa y gestión de HUs por ubicación</p></div><span style="color:var(--text3)">›</span></div>
+      <div id="menu-usuarios" class="menu-card usuarios" onclick="irUsuarios()" style="display:none"><div class="menu-icon">👤</div><div class="menu-card-text"><h3>Usuarios</h3><p>Gestión de accesos y permisos</p></div><span style="color:var(--text3)">›</span></div>
     </div>
     <div class="footer-pad"></div>
   </div>
 </div>
-
+ 
 <!-- ENTRADA -->
 <div id="s-entrada" class="screen">
-  <div class="app-header"><button class="back-btn" onclick="irMenu()">â€¹</button><h2>Nueva Entrada</h2><span class="user-badge" style="background:var(--green-dim);color:var(--green)">ENTRADA</span></div>
+  <div class="app-header"><button class="back-btn" onclick="irMenu()">‹</button><h2>Nueva Entrada</h2><span class="user-badge" style="background:var(--green-dim);color:var(--green)">ENTRADA</span></div>
   <div class="content">
-    <div class="alert info"><span>ðŸ“·</span><span>Escanea el cÃ³digo o escribe manualmente.</span></div>
-    <div class="card"><div class="section-lbl">HU - Handling Unit</div><div class="field-with-icon"><input class="field-inp" id="inp-hu" type="text" placeholder="HU" autocapitalize="characters"/><div class="field-scan-btn" onclick="iniciarScan('hu')">ðŸ“·</div></div></div>
-    <div class="card"><div class="section-lbl">OV - Orden de Venta</div><div class="field-with-icon"><input class="field-inp" id="inp-ov" type="text" placeholder="OV" autocapitalize="characters"/><div class="field-scan-btn" onclick="iniciarScan('ov')">ðŸ“·</div></div></div>
-    <div class="card"><div class="section-lbl">SKU - CÃ³digo de Producto</div><div class="field-with-icon"><input class="field-inp" id="inp-sku" type="text" placeholder="SKU" autocapitalize="characters"/><div class="field-scan-btn" onclick="iniciarScan('sku')">ðŸ“·</div></div></div>
-    <div class="card"><div class="section-lbl">NÃºmero de Bultos</div><div class="bultos-counter"><button class="counter-btn minus" onclick="cambiarBultos(-1)">-</button><div class="counter-display" id="bultos-display">1</div><button class="counter-btn plus" onclick="cambiarBultos(1)">+</button></div></div>
+    <div class="alert info"><span>📷</span><span>Escanea el código o escribe manualmente.</span></div>
+    <div class="card"><div class="section-lbl">HU - Handling Unit</div><div class="field-with-icon"><input class="field-inp" id="inp-hu" type="text" placeholder="HU" autocapitalize="characters"/><div class="field-scan-btn" onclick="iniciarScan('hu')">📷</div></div></div>
+    <div class="card"><div class="section-lbl">OV - Orden de Venta</div><div class="field-with-icon"><input class="field-inp" id="inp-ov" type="text" placeholder="OV" autocapitalize="characters"/><div class="field-scan-btn" onclick="iniciarScan('ov')">📷</div></div></div>
+    <div class="card"><div class="section-lbl">SKU - Código de Producto</div><div class="field-with-icon"><input class="field-inp" id="inp-sku" type="text" placeholder="SKU" autocapitalize="characters"/><div class="field-scan-btn" onclick="iniciarScan('sku')">📷</div></div></div>
+    <div class="card"><div class="section-lbl">Número de Bultos</div><div class="bultos-counter"><button class="counter-btn minus" onclick="cambiarBultos(-1)">-</button><div class="counter-display" id="bultos-display">1</div><button class="counter-btn plus" onclick="cambiarBultos(1)">+</button></div></div>
     <div class="card">
-      <div class="section-lbl">UbicaciÃ³n Destino</div>
+      <div class="section-lbl">Ubicación Destino</div>
       <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button id="btn-modo-lista" onclick="setModoUbi('lista')" style="flex:1;padding:9px;border-radius:var(--r-sm);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--primary-dim);color:var(--primary);border:1.5px solid rgba(79,70,229,0.3)">CatÃ¡logo</button>
+        <button id="btn-modo-lista" onclick="setModoUbi('lista')" style="flex:1;padding:9px;border-radius:var(--r-sm);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--primary-dim);color:var(--primary);border:1.5px solid rgba(79,70,229,0.3)">Catálogo</button>
         <button id="btn-modo-scan" onclick="setModoUbi('scan')" style="flex:1;padding:9px;border-radius:var(--r-sm);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text2);border:1.5px solid var(--border)">Escanear</button>
       </div>
-      <div id="ubi-modo-lista"><select class="ubi-select" id="sel-ubi" onchange="sincUbiScan()"><option value="">- Selecciona la ubicaciÃ³n -</option></select></div>
+      <div id="ubi-modo-lista"><select class="ubi-select" id="sel-ubi" onchange="sincUbiScan()"><option value="">- Selecciona la ubicación -</option></select></div>
       <div id="ubi-modo-scan" style="display:none">
-        <div class="field-with-icon"><input class="field-inp" id="inp-ubi-scan" type="text" placeholder="Escanea o escribe la ubicaciÃ³n" autocapitalize="characters" oninput="sincUbiLista()"/><div class="field-scan-btn" onclick="iniciarScan('ubi')">ðŸ“·</div></div>
+        <div class="field-with-icon"><input class="field-inp" id="inp-ubi-scan" type="text" placeholder="Escanea o escribe la ubicación" autocapitalize="characters" oninput="sincUbiLista()"/><div class="field-scan-btn" onclick="iniciarScan('ubi')">📷</div></div>
         <div id="ubi-sugerencias" style="margin-top:6px;display:none;flex-wrap:wrap;gap:6px"></div>
       </div>
       <div id="ubi-seleccionada" style="display:none;margin-top:8px;background:var(--primary-dim);border:1px solid rgba(79,70,229,0.2);border-radius:var(--r-sm);padding:10px;font-size:13px;color:var(--primary);font-weight:600"></div>
@@ -242,15 +242,15 @@ var SCANNER_URL = 'https://yseber9.github.io/wms-cedis/scanner.html'; // â†
     <div class="footer-pad"></div>
   </div>
 </div>
-
+ 
 <!-- SALIDA -->
 <div id="s-salida" class="screen">
-  <div class="app-header"><button class="back-btn" onclick="irMenu()">â€¹</button><h2>Salida de HU</h2><span class="user-badge" style="background:var(--amber-dim);color:var(--amber)">SALIDA</span></div>
+  <div class="app-header"><button class="back-btn" onclick="irMenu()">‹</button><h2>Salida de HU</h2><span class="user-badge" style="background:var(--amber-dim);color:var(--amber)">SALIDA</span></div>
   <div class="content">
     <div class="card">
       <div class="section-lbl">Buscar por HU o SKU</div>
       <div class="search-bar"><input class="search-inp" id="inp-buscar" type="text" placeholder="Escribe o escanea HU/SKU"/><button class="search-btn" onclick="buscarHU()">Buscar</button></div>
-      <button onclick="iniciarScan('buscar')" style="width:100%;padding:12px;background:var(--primary-dim);border:1.5px solid rgba(79,70,229,0.2);border-radius:var(--r-sm);color:var(--primary);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:block;text-align:center;box-sizing:border-box">ðŸ“· Escanear cÃ³digo</button>
+      <button onclick="iniciarScan('buscar')" style="width:100%;padding:12px;background:var(--primary-dim);border:1.5px solid rgba(79,70,229,0.2);border-radius:var(--r-sm);color:var(--primary);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:block;text-align:center;box-sizing:border-box">📷 Escanear código</button>
     </div>
     <div id="resultados-busqueda" style="display:none"><div class="section-lbl">Resultados</div><div id="lista-resultados"></div></div>
     <div id="detalle-salida" style="display:none">
@@ -264,25 +264,25 @@ var SCANNER_URL = 'https://yseber9.github.io/wms-cedis/scanner.html'; // â†
     <div id="salida-msg" style="display:none"></div>
     <div id="btn-confirmar-salida" style="display:none;flex-direction:column;gap:10px;padding-top:4px">
       <button class="btn-main" style="background:var(--amber);box-shadow:0 4px 12px rgba(217,119,6,0.3)" onclick="confirmarSalida()">Confirmar Salida</button>
-      <button class="btn-ghost" onclick="resetSalida()">Limpiar bÃºsqueda</button>
+      <button class="btn-ghost" onclick="resetSalida()">Limpiar búsqueda</button>
     </div>
     <div class="footer-pad"></div>
   </div>
 </div>
-
+ 
 <!-- INVENTARIO -->
 <div id="s-inventario" class="screen">
-  <div class="app-header"><button class="back-btn" onclick="irMenu()">â€¹</button><h2>Inventario</h2><span class="user-badge">STOCK</span></div>
+  <div class="app-header"><button class="back-btn" onclick="irMenu()">‹</button><h2>Inventario</h2><span class="user-badge">STOCK</span></div>
   <div class="content">
-    <div class="search-bar"><input class="search-inp" id="inv-filtro" type="text" placeholder="HU, OV, SKU o UbicaciÃ³n"/><button class="search-btn" onclick="cargarInventario()">Buscar</button></div>
-    <div class="card" style="padding:0"><div class="tabla-scroll"><table class="inv-table"><thead><tr><th>HU</th><th>OV</th><th>SKU</th><th>Bts</th><th>UbicaciÃ³n</th><th>DÃ­as</th></tr></thead><tbody id="inv-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Cargando...</td></tr></tbody></table></div></div>
+    <div class="search-bar"><input class="search-inp" id="inv-filtro" type="text" placeholder="HU, OV, SKU o Ubicación"/><button class="search-btn" onclick="cargarInventario()">Buscar</button></div>
+    <div class="card" style="padding:0"><div class="tabla-scroll"><table class="inv-table"><thead><tr><th>HU</th><th>OV</th><th>SKU</th><th>Bts</th><th>Ubicación</th><th>Días</th></tr></thead><tbody id="inv-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Cargando...</td></tr></tbody></table></div></div>
     <div class="footer-pad"></div>
   </div>
 </div>
-
+ 
 <!-- HISTORICO -->
 <div id="s-historico" class="screen">
-  <div class="app-header"><button class="back-btn" onclick="irMenu()">â€¹</button><h2>HistÃ³rico</h2><span class="user-badge" style="background:var(--purple-dim);color:var(--purple)">LOG</span></div>
+  <div class="app-header"><button class="back-btn" onclick="irMenu()">‹</button><h2>Histórico</h2><span class="user-badge" style="background:var(--purple-dim);color:var(--purple)">LOG</span></div>
   <div class="content">
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Desde</div><input class="search-inp" id="hist-fecha-ini" type="date" style="width:100%;padding:10px 12px;font-size:13px" onchange="cargarHistorico()"/></div>
@@ -293,35 +293,35 @@ var SCANNER_URL = 'https://yseber9.github.io/wms-cedis/scanner.html'; // â†
     <div class="footer-pad"></div>
   </div>
 </div>
-
+ 
 <!-- UBICACIONES -->
 <div id="s-ubicaciones" class="screen">
-  <div class="app-header"><button class="back-btn" onclick="irMenu()">â€¹</button><h2>Ubicaciones</h2><span class="user-badge" style="background:var(--orange-dim);color:var(--orange)">MAPA</span></div>
+  <div class="app-header"><button class="back-btn" onclick="irMenu()">‹</button><h2>Ubicaciones</h2><span class="user-badge" style="background:var(--orange-dim);color:var(--orange)">MAPA</span></div>
   <div class="content"><div id="areas-lista"><div style="text-align:center;color:var(--text3);padding:30px">Cargando...</div></div><div class="footer-pad"></div></div>
 </div>
 <div id="s-racks" class="screen">
-  <div class="app-header"><button class="back-btn" onclick="irUbicaciones()">â€¹</button><h2>Almacenaje Rack</h2><span class="user-badge" style="background:var(--orange-dim);color:var(--orange)">RACK</span></div>
-  <div class="content"><p style="font-size:12px;color:var(--text2)">Selecciona MÃ³dulo y Nivel</p><div id="racks-grid"><div style="text-align:center;color:var(--text3);padding:30px">Cargando...</div></div><div class="footer-pad"></div></div>
+  <div class="app-header"><button class="back-btn" onclick="irUbicaciones()">‹</button><h2>Almacenaje Rack</h2><span class="user-badge" style="background:var(--orange-dim);color:var(--orange)">RACK</span></div>
+  <div class="content"><p style="font-size:12px;color:var(--text2)">Selecciona Módulo y Nivel</p><div id="racks-grid"><div style="text-align:center;color:var(--text3);padding:30px">Cargando...</div></div><div class="footer-pad"></div></div>
 </div>
 <div id="s-nivel" class="screen">
-  <div class="app-header"><button class="back-btn" onclick="irAreaAnterior()">â€¹</button><h2 id="nivel-titulo">Nivel</h2><span class="user-badge" style="background:var(--orange-dim);color:var(--orange)" id="nivel-badge">-</span></div>
+  <div class="app-header"><button class="back-btn" onclick="irAreaAnterior()">‹</button><h2 id="nivel-titulo">Nivel</h2><span class="user-badge" style="background:var(--orange-dim);color:var(--orange)" id="nivel-badge">-</span></div>
   <div class="content"><div id="nivel-contenido"><div style="text-align:center;color:var(--text3);padding:30px">Cargando...</div></div><div class="footer-pad"></div></div>
 </div>
 <div id="s-piso" class="screen">
-  <div class="app-header"><button class="back-btn" onclick="irAreaAnterior()">â€¹</button><h2 id="piso-titulo">Ãrea</h2><span class="user-badge" style="background:var(--primary-dim);color:var(--primary)">PISO</span></div>
+  <div class="app-header"><button class="back-btn" onclick="irAreaAnterior()">‹</button><h2 id="piso-titulo">Área</h2><span class="user-badge" style="background:var(--primary-dim);color:var(--primary)">PISO</span></div>
   <div class="content"><div id="piso-grid"><div style="text-align:center;color:var(--text3);padding:30px">Cargando...</div></div><div class="footer-pad"></div></div>
 </div>
-
+ 
 <!-- USUARIOS -->
 <div id="s-usuarios" class="screen">
-  <div class="app-header"><button class="back-btn" onclick="irMenu()">â€¹</button><h2>Usuarios</h2><span class="user-badge" style="background:var(--cyan-dim);color:var(--cyan)">ADMIN</span></div>
+  <div class="app-header"><button class="back-btn" onclick="irMenu()">‹</button><h2>Usuarios</h2><span class="user-badge" style="background:var(--cyan-dim);color:var(--cyan)">ADMIN</span></div>
   <div class="content">
     <button onclick="abrirModalUsuario(null)" style="width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:var(--r-sm);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(79,70,229,0.3)">+ Nuevo Usuario</button>
     <div id="usuarios-lista"><div style="text-align:center;color:var(--text3);padding:30px">Cargando...</div></div>
     <div class="footer-pad"></div>
   </div>
 </div>
-
+ 
 <!-- MODALES -->
 <div class="modal-overlay" id="modal-ubi"><div class="modal-sheet"><div class="modal-handle"></div><div id="modal-ubi-body"></div><button class="btn-ghost" style="margin-top:12px" onclick="cerrarModalUbi()">Cerrar</button></div></div>
 <div class="modal-overlay" id="modal-editar">
@@ -333,7 +333,7 @@ var SCANNER_URL = 'https://yseber9.github.io/wms-cedis/scanner.html'; // â†
     <div class="field-wrap"><div class="field-lbl">OV</div><input class="field-inp" id="edit-ov" type="text"/></div>
     <div class="field-wrap"><div class="field-lbl">SKU</div><input class="field-inp" id="edit-sku" type="text"/></div>
     <div class="field-wrap"><div class="field-lbl">Bultos</div><input class="field-inp" id="edit-bultos" type="number" min="0"/></div>
-    <div class="field-wrap"><div class="field-lbl">UbicaciÃ³n</div><select class="ubi-select" id="edit-ubicacion"></select></div>
+    <div class="field-wrap"><div class="field-lbl">Ubicación</div><select class="ubi-select" id="edit-ubicacion"></select></div>
     <div id="edit-msg" style="display:none;margin-bottom:10px"></div>
     <button class="btn-main" onclick="guardarEdicionHU()">Guardar cambios</button>
     <button class="btn-ghost" style="margin-top:10px" onclick="cerrarModalEditar()">Cancelar</button>
@@ -359,27 +359,27 @@ var SCANNER_URL = 'https://yseber9.github.io/wms-cedis/scanner.html'; // â†
     <div class="modal-title" id="modal-usuario-titulo">Nuevo Usuario</div>
     <input type="hidden" id="usr-alias-orig"/>
     <div class="field-wrap"><div class="field-lbl">Alias</div><input class="field-inp" id="usr-alias" type="text" placeholder="Ej: rick" autocapitalize="none"/></div>
-    <div class="field-wrap"><div class="field-lbl">ContraseÃ±a</div><input class="field-inp" id="usr-pass" type="password" placeholder="ContraseÃ±a"/></div>
-    <div class="field-wrap"><div class="field-lbl">Confirmar contraseÃ±a</div><input class="field-inp" id="usr-pass2" type="password" placeholder="Repite la contraseÃ±a"/></div>
+    <div class="field-wrap"><div class="field-lbl">Contraseña</div><input class="field-inp" id="usr-pass" type="password" placeholder="Contraseña"/></div>
+    <div class="field-wrap"><div class="field-lbl">Confirmar contraseña</div><input class="field-inp" id="usr-pass2" type="password" placeholder="Repite la contraseña"/></div>
     <div class="field-wrap"><div class="field-lbl">Rol</div><select class="ubi-select" id="usr-rol"><option value="OPERADOR">Operador</option><option value="admin">Administrador</option></select></div>
     <div id="usr-msg" style="display:none;margin-bottom:10px"></div>
     <button class="btn-main" onclick="guardarUsuario()">Guardar</button>
     <button class="btn-ghost" style="margin-top:10px" onclick="cerrarModalUsuario()">Cancelar</button>
   </div>
 </div>
-
+ 
 <script>
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════════════
    VARIABLES GLOBALES
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+══════════════════════════════════════════════════════════════════ */
 var sesion = { usuario:'', rol:'', token:'' };
 var bultosEntrada=1, bultosSalida=1, maxBultosSalida=999;
 var bultosUbi=1, maxBultosUbi=1;
 var huSeleccionado = null;
 var ubicaciones=[], datosEstruc=null, ubiDetalleCurrent=null;
 var moduloActual=null, nivelActual=null, pantallaAnteriorUbi='s-ubicaciones';
-
-/* â”€â”€ AUDIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── AUDIO ─────────────────────────────────────────────────────── */
 function beep(freq,dur,vol){
   try{
     var AC=window.AudioContext||window.webkitAudioContext;
@@ -393,8 +393,8 @@ function beep(freq,dur,vol){
 }
 function sonidoScan(){beep(1047,90,0.3);setTimeout(function(){beep(1319,130,0.4);},100);}
 function vibrar(p){if(navigator.vibrate)navigator.vibrate(p);}
-
-/* â”€â”€ API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── API ────────────────────────────────────────────────────────── */
 function apiGet(params, cb) {
   var url = API_URL + '?' + Object.keys(params).map(function(k){
     return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]||'');
@@ -404,8 +404,8 @@ function apiGet(params, cb) {
     .then(function(data){ cb(null, data); })
     .catch(function(err){ cb(err, null); });
 }
-
-/* â”€â”€ SCANNER â€” BroadcastChannel 'wms_scanner' â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── SCANNER — BroadcastChannel 'wms_scanner' ───────────────────── */
 var canalScan = null;
 try {
   canalScan = new BroadcastChannel('wms_scanner');
@@ -414,7 +414,7 @@ try {
     _scanAsignar(String(event.data.codigo).trim().toUpperCase(), event.data.campo);
   };
 } catch(e) {}
-
+ 
 function iniciarScan(campo) {
   var url = SCANNER_URL + '?campo=' + campo;
   var win = window.open(url, '_blank');
@@ -425,16 +425,16 @@ function iniciarScan(campo) {
       av.id = 'aviso-popup';
       av.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:2000;display:flex;align-items:center;justify-content:center;padding:24px';
       av.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center">'
-        + '<div style="font-size:36px;margin-bottom:12px">ðŸ“·</div>'
+        + '<div style="font-size:36px;margin-bottom:12px">📷</div>'
         + '<h3 style="font-size:15px;font-weight:800;color:#0F172A;margin-bottom:8px">Permite popups para el Scanner</h3>'
-        + '<p style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:16px">Toca el icono en la barra de direcciÃ³n y selecciona <b>Permitir siempre</b>. Luego toca de nuevo el botÃ³n de cÃ¡mara.</p>'
+        + '<p style="font-size:13px;color:#475569;line-height:1.6;margin-bottom:16px">Toca el icono en la barra de dirección y selecciona <b>Permitir siempre</b>. Luego toca de nuevo el botón de cámara.</p>'
         + '<button onclick="document.getElementById(\'aviso-popup\').style.display=\'none\'" style="width:100%;padding:13px;background:#4F46E5;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Entendido</button>'
         + '</div>';
       document.body.appendChild(av);
     } else { av.style.display = 'flex'; }
   }
 }
-
+ 
 function _scanAsignar(codigo, campo) {
   var mapa = { hu:'inp-hu', ov:'inp-ov', sku:'inp-sku', buscar:'inp-buscar', ubi:'inp-ubi-scan' };
   var id = mapa[campo];
@@ -442,7 +442,7 @@ function _scanAsignar(codigo, campo) {
     document.getElementById(id).value = codigo;
     if (campo === 'buscar') buscarHU();
     if (campo === 'ubi') { sincUbiLista(); actualizarUbiSeleccionada(); }
-    // Avance automÃ¡tico HU â†’ OV â†’ SKU
+    // Avance automático HU → OV → SKU
     var orden = ['hu','ov','sku'];
     var idx = orden.indexOf(campo);
     if (idx >= 0 && idx < orden.length - 1) {
@@ -452,21 +452,21 @@ function _scanAsignar(codigo, campo) {
   sonidoScan();
   vibrar([80,30,80]);
 }
-
-/* â”€â”€ LOGIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── LOGIN ──────────────────────────────────────────────────────── */
 function doLoginApp() {
   var u=document.getElementById('inp-user').value.trim();
   var p=document.getElementById('inp-pass').value.trim();
   var e=document.getElementById('login-err');
   var b=document.getElementById('btn-login');
-  if (!u||!p) { e.textContent='Ingresa usuario y contraseÃ±a'; e.style.display='block'; return; }
+  if (!u||!p) { e.textContent='Ingresa usuario y contraseña'; e.style.display='block'; return; }
   b.disabled=true; b.textContent='Verificando...'; e.style.display='none';
   apiGet({ action:'login', usuario:u, password:p }, function(err, res) {
     if (res && res.ok) {
       sesion = { usuario:res.alias, rol:res.rol, token:res.token };
       document.getElementById('user-badge').textContent = res.alias.toUpperCase();
       var h = new Date().getHours();
-      document.getElementById('menu-saludo').textContent = h<12?'Buenos dÃ­as â˜€ï¸':h<19?'Buenas tardes':'Buenas noches';
+      document.getElementById('menu-saludo').textContent = h<12?'Buenos días ☀️':h<19?'Buenas tardes':'Buenas noches';
       document.getElementById('menu-fecha').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
       if (res.rol && res.rol.toLowerCase()==='admin') document.getElementById('menu-usuarios').style.display='flex';
       irPantalla('s-menu');
@@ -478,34 +478,34 @@ function doLoginApp() {
     b.disabled=false; b.textContent='Ingresar al sistema';
   });
 }
-
+ 
 function testConexionApp() {
   var b=document.getElementById('btn-test');
   b.textContent='Probando...';
   apiGet({ action:'login', usuario:'test', password:'test' }, function(e,r) {
     if (r) {
-      alert('âœ… ConexiÃ³n OK\nRespuesta: ' + JSON.stringify(r));
+      alert('✅ Conexión OK\nRespuesta: ' + JSON.stringify(r));
     } else {
-      alert('âŒ Error de conexiÃ³n: ' + (e && e.message));
+      alert('❌ Error de conexión: ' + (e && e.message));
     }
-    b.textContent='Test de conexiÃ³n';
+    b.textContent='Test de conexión';
   });
 }
-
+ 
 function cerrarSesion() {
-  if (!confirm('Â¿Cerrar sesiÃ³n?')) return;
+  if (!confirm('¿Cerrar sesión?')) return;
   sesion = {};
   document.getElementById('inp-user').value='';
   document.getElementById('inp-pass').value='';
   document.getElementById('menu-usuarios').style.display='none';
   irPantalla('s-login');
 }
-
+ 
 function cargarStats() {
   apiGet({ action:'inventario' }, function(e,r){ if(r&&r.ok) document.getElementById('stat-hus').textContent=r.inventario.length; });
   apiGet({ action:'historico' }, function(e,r){ if(r&&r.ok) document.getElementById('stat-mov').textContent=r.movimientos.length; });
 }
-
+ 
 function cargarUbicaciones() {
   apiGet({ action:'ubicaciones' }, function(e,r) {
     if (r && r.ok) {
@@ -522,7 +522,7 @@ function cargarUbicaciones() {
     }
   });
 }
-
+ 
 function cargarUsuariosHistorico() {
   apiGet({ action:'historico' }, function(e,r) {
     if (!r||!r.ok) return;
@@ -532,8 +532,8 @@ function cargarUsuariosHistorico() {
     us.forEach(function(u){ var o=document.createElement('option'); o.value=u; o.textContent=u; s.appendChild(o); });
   });
 }
-
-/* â”€â”€ NAVEGACIÃ“N â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── NAVEGACIÓN ─────────────────────────────────────────────────── */
 function irPantalla(id){ document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');}); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 function irMenu(){ irPantalla('s-menu'); }
 function irEntrada(){ resetEntrada(); irPantalla('s-entrada'); }
@@ -543,10 +543,10 @@ function irHistorico(){ irPantalla('s-historico'); cargarHistorico(); }
 function irUbicaciones(){ irPantalla('s-ubicaciones'); if(!datosEstruc) cargarAreas(); }
 function irUsuarios(){ irPantalla('s-usuarios'); cargarUsuarios(); }
 function irAreaAnterior(){ irPantalla(pantallaAnteriorUbi); }
-
-/* â”€â”€ ENTRADA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── ENTRADA ────────────────────────────────────────────────────── */
 function cambiarBultos(d){ bultosEntrada=Math.max(1,bultosEntrada+d); document.getElementById('bultos-display').textContent=bultosEntrada; }
-
+ 
 function setModoUbi(m){
   var bL=document.getElementById('btn-modo-lista'), bS=document.getElementById('btn-modo-scan');
   var dL=document.getElementById('ubi-modo-lista'), dS=document.getElementById('ubi-modo-scan');
@@ -561,7 +561,7 @@ function setModoUbi(m){
   }
   actualizarUbiSeleccionada();
 }
-
+ 
 function getUbiSeleccionada(){
   var d=document.getElementById('ubi-modo-scan');
   if (d&&d.style.display!=='none') return document.getElementById('inp-ubi-scan').value.trim();
@@ -585,7 +585,7 @@ function sincUbiLista(){
 function elegirSugerencia(id){ document.getElementById('inp-ubi-scan').value=id; document.getElementById('ubi-sugerencias').style.display='none'; sincUbiLista(); actualizarUbiSeleccionada(); }
 function actualizarUbiSeleccionada(){
   var v=getUbiSeleccionada(), el=document.getElementById('ubi-seleccionada'); if(!el)return;
-  if(v){var u=ubicaciones.filter(function(x){return x.id===v;})[0];el.style.display='block';el.textContent='UbicaciÃ³n: '+v+(u&&u.area?' - '+u.area:'');}
+  if(v){var u=ubicaciones.filter(function(x){return x.id===v;})[0];el.style.display='block';el.textContent='Ubicación: '+v+(u&&u.area?' - '+u.area:'');}
   else{el.style.display='none';}
 }
 function resetEntrada(){
@@ -598,7 +598,7 @@ function resetEntrada(){
   document.getElementById('entrada-msg').style.display='none';
   setModoUbi('lista');
 }
-
+ 
 function guardarEntrada(){
   var hu=document.getElementById('inp-hu').value.trim();
   var ov=document.getElementById('inp-ov').value.trim();
@@ -611,24 +611,24 @@ function guardarEntrada(){
     mostrarLoading(false);
     if(r&&r.ok){
       sonidoScan(); vibrar([100,50,100]);
-      document.getElementById('s-entrada').innerHTML='<div class="app-header"><button class="back-btn" onclick="irMenu()">â€¹</button><h2>Entrada Registrada</h2></div>'
-        +'<div class="success-full"><div class="success-icon">âœ“</div><h2 style="color:var(--green)">Entrada exitosa</h2>'
+      document.getElementById('s-entrada').innerHTML='<div class="app-header"><button class="back-btn" onclick="irMenu()">‹</button><h2>Entrada Registrada</h2></div>'
+        +'<div class="success-full"><div class="success-icon">✓</div><h2 style="color:var(--green)">Entrada exitosa</h2>'
         +'<div class="success-detail">'
         +'<div class="detail-row"><span>HU</span><span>'+hu+'</span></div>'
         +'<div class="detail-row"><span>OV</span><span>'+ov+'</span></div>'
         +'<div class="detail-row"><span>SKU</span><span>'+sku+'</span></div>'
         +'<div class="detail-row"><span>Bultos</span><span>'+bultosEntrada+'</span></div>'
-        +'<div class="detail-row"><span>UbicaciÃ³n</span><span>'+ubi+'</span></div>'
+        +'<div class="detail-row"><span>Ubicación</span><span>'+ubi+'</span></div>'
         +'<div class="detail-row"><span>Operador</span><span>'+sesion.usuario+'</span></div>'
         +'</div>'
         +'<button class="btn-main" style="background:var(--green)" onclick="irEntrada()">Nueva entrada</button>'
-        +'<button class="btn-ghost" style="margin-top:10px" onclick="irMenu()">Volver al menÃº</button>'
+        +'<button class="btn-ghost" style="margin-top:10px" onclick="irMenu()">Volver al menú</button>'
         +'</div>';
     } else { mostrarMsg(msg,'error',(r&&r.error)||'Error al registrar'); }
   });
 }
-
-/* â”€â”€ SALIDA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── SALIDA ─────────────────────────────────────────────────────── */
 function cambiarBultosS(d){ bultosSalida=Math.max(1,Math.min(maxBultosSalida,bultosSalida+d)); document.getElementById('bultos-salida-display').textContent=bultosSalida; }
 function resetSalida(){
   document.getElementById('inp-buscar').value='';
@@ -661,7 +661,7 @@ function seleccionarHU(i){
   var r=window._res[i]; huSeleccionado=r; maxBultosSalida=parseInt(r.bultos)||1; bultosSalida=1;
   document.getElementById('bultos-salida-display').textContent='1';
   document.getElementById('bultos-disponibles').textContent=r.bultos;
-  document.getElementById('hu-seleccionado-info').innerHTML='<div class="detail-row"><span>HU</span><span>'+r.hu+'</span></div><div class="detail-row"><span>OV</span><span>'+r.ov+'</span></div><div class="detail-row"><span>SKU</span><span>'+r.sku+'</span></div><div class="detail-row"><span>UbicaciÃ³n</span><span>'+r.ubicacion+'</span></div>';
+  document.getElementById('hu-seleccionado-info').innerHTML='<div class="detail-row"><span>HU</span><span>'+r.hu+'</span></div><div class="detail-row"><span>OV</span><span>'+r.ov+'</span></div><div class="detail-row"><span>SKU</span><span>'+r.sku+'</span></div><div class="detail-row"><span>Ubicación</span><span>'+r.ubicacion+'</span></div>';
   document.getElementById('detalle-salida').style.display='block';
   document.getElementById('btn-confirmar-salida').style.display='flex';
 }
@@ -674,8 +674,8 @@ function confirmarSalida(){
     else{mostrarMsg(document.getElementById('salida-msg'),'error',(r&&r.error)||'Error');}
   });
 }
-
-/* â”€â”€ INVENTARIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── INVENTARIO ─────────────────────────────────────────────────── */
 function cargarInventario(){
   var f=document.getElementById('inv-filtro').value.trim(), t=document.getElementById('inv-tbody');
   t.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px"><div class="spinner" style="margin:0 auto"></div></td></tr>';
@@ -688,8 +688,8 @@ function cargarInventario(){
     }).join('');
   });
 }
-
-/* â”€â”€ HISTÃ“RICO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── HISTÓRICO ──────────────────────────────────────────────────── */
 function cargarHistorico(){
   var fi=document.getElementById('hist-fecha-ini').value;
   var ff=document.getElementById('hist-fecha-fin').value;
@@ -720,35 +720,35 @@ function cargarHistorico(){
       }).join('')+'</tbody></table>';
   });
 }
-
-/* â”€â”€ UBICACIONES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── UBICACIONES ────────────────────────────────────────────────── */
 function cargarAreas(){
   var c=document.getElementById('areas-lista');
   c.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px">Cargando...</div>';
   apiGet({action:'ubicacionesEstruc'},function(e,r){
-    if(!r||!r.ok){c.innerHTML='<div style="color:var(--red);padding:20px">Error al cargar Ã¡reas</div>';return;}
+    if(!r||!r.ok){c.innerHTML='<div style="color:var(--red);padding:20px">Error al cargar áreas</div>';return;}
     datosEstruc=r;
     var husRack=0,ubisRack=0;
     Object.keys(r.racks||{}).forEach(function(m){Object.keys(r.racks[m]).forEach(function(n){r.racks[m][n].forEach(function(u){husRack+=u.hus;ubisRack++;});});});
     var ORDEN=['LIBRE','ALMACENAJE','RECEPCION','INVERSA','ENVIOS','DEVOLUCIONES','SIN CATALOGO'];
-    var LABELS={LIBRE:'Almacenaje Piso',ALMACENAJE:'Almacenaje',RECEPCION:'RecepciÃ³n',INVERSA:'LogÃ­stica Inversa',ENVIOS:'EnvÃ­os',DEVOLUCIONES:'Devoluciones','SIN CATALOGO':'Sin CatÃ¡logo'};
+    var LABELS={LIBRE:'Almacenaje Piso',ALMACENAJE:'Almacenaje',RECEPCION:'Recepción',INVERSA:'Logística Inversa',ENVIOS:'Envíos',DEVOLUCIONES:'Devoluciones','SIN CATALOGO':'Sin Catálogo'};
     var COLORS={LIBRE:'var(--primary)',ALMACENAJE:'var(--primary)',RECEPCION:'var(--green)',INVERSA:'var(--purple)',ENVIOS:'var(--amber)',DEVOLUCIONES:'var(--red)','SIN CATALOGO':'var(--text2)'};
     var DIMS={LIBRE:'var(--primary-dim)',ALMACENAJE:'var(--primary-dim)',RECEPCION:'var(--green-dim)',INVERSA:'var(--purple-dim)',ENVIOS:'var(--amber-dim)',DEVOLUCIONES:'var(--red-dim)','SIN CATALOGO':'var(--surface2)'};
-    var ICONS={LIBRE:'â–®',ALMACENAJE:'â–®',RECEPCION:'â†“',INVERSA:'â†»',ENVIOS:'â†‘',DEVOLUCIONES:'â†©','SIN CATALOGO':'âš '};
+    var ICONS={LIBRE:'▮',ALMACENAJE:'▮',RECEPCION:'↓',INVERSA:'↻',ENVIOS:'↑',DEVOLUCIONES:'↩','SIN CATALOGO':'⚠'};
     var html='<div onclick="seleccionarArea(\'RACK\',\'rack\')" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--orange);border-radius:var(--r-sm);padding:16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)">'
-      +'<div style="width:44px;height:44px;border-radius:12px;background:var(--orange-dim);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--orange)">â›ƒ</div>'
+      +'<div style="width:44px;height:44px;border-radius:12px;background:var(--orange-dim);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--orange)">⛃</div>'
       +'<div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--orange)">Almacenaje Rack</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+ubisRack+' posiciones - '+husRack+' HUs</div></div>'
-      +'<span style="color:var(--text3)">â€º</span></div>';
+      +'<span style="color:var(--text3)">›</span></div>';
     var areas=Object.keys(r.pisosPorArea||{});
     var ordenadas=ORDEN.filter(function(a){return areas.indexOf(a)>=0;});
     var extras=areas.filter(function(a){return ORDEN.indexOf(a)<0;});
     ordenadas.concat(extras).forEach(function(area){
       var lista=r.pisosPorArea[area]||[],hus=lista.reduce(function(a,b){return a+b.hus;},0);
-      var col=COLORS[area]||'var(--text2)',dim=DIMS[area]||'var(--surface2)',icon=ICONS[area]||'â–®',label=LABELS[area]||area;
+      var col=COLORS[area]||'var(--text2)',dim=DIMS[area]||'var(--surface2)',icon=ICONS[area]||'▮',label=LABELS[area]||area;
       html+='<div onclick="seleccionarArea(\''+area+'\',\'piso\')" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid '+col+';border-radius:var(--r-sm);padding:16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow)">'
         +'<div style="width:44px;height:44px;border-radius:12px;background:'+dim+';display:flex;align-items:center;justify-content:center;font-size:20px;color:'+col+'">'+icon+'</div>'
         +'<div style="flex:1"><div style="font-size:14px;font-weight:700;color:'+col+'">'+label+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+lista.length+' ubicaciones - '+hus+' HUs</div></div>'
-        +'<span style="color:var(--text3)">â€º</span></div>';
+        +'<span style="color:var(--text3)">›</span></div>';
     });
     html+='<div style="background:var(--primary-dim);border-radius:var(--r-sm);padding:12px 16px;text-align:center;font-size:12px;color:var(--text2);font-weight:500">Total en inventario: <b style="color:var(--primary)">'+r.totalHUs+' HUs</b></div>';
     c.innerHTML=html;
@@ -802,7 +802,7 @@ function verNivel(modulo,nivel){
         +'<button onclick="event.stopPropagation();abrirEntradaEnUbi2(\''+u.id+'\')" style="padding:5px 10px;background:var(--green-dim);border:1px solid rgba(5,150,105,0.3);border-radius:6px;color:var(--green);font-size:11px;font-weight:700;cursor:pointer">+HU</button>'
         +'</div>';
       html+='<div id="pos-'+idx+'" style="display:none;border-top:1px solid var(--border);padding:8px 14px">';
-      if(!u.items.length){html+='<div style="color:var(--text3);font-size:12px;padding:6px 0">VacÃ­a</div>';}
+      if(!u.items.length){html+='<div style="color:var(--text3);font-size:12px;padding:6px 0">Vacía</div>';}
       else{u.items.forEach(function(item,ii){
         var dn=parseInt(item.dias),dc=isNaN(dn)?'ok':dn>=7?'alerta':dn>=3?'warn':'ok',dt=isNaN(dn)?'-':dn===0?'Hoy':dn+'d';
         html+='<div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid var(--border)">'
@@ -821,12 +821,12 @@ function verNivel(modulo,nivel){
 }
 function togglePos(id){var el=document.getElementById(id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
 function renderPiso(area){
-  var LABELS={LIBRE:'Almacenaje Piso',ALMACENAJE:'Almacenaje',RECEPCION:'RecepciÃ³n',INVERSA:'LogÃ­stica Inversa',ENVIOS:'EnvÃ­os',DEVOLUCIONES:'Devoluciones','SIN CATALOGO':'Sin CatÃ¡logo'};
+  var LABELS={LIBRE:'Almacenaje Piso',ALMACENAJE:'Almacenaje',RECEPCION:'Recepción',INVERSA:'Logística Inversa',ENVIOS:'Envíos',DEVOLUCIONES:'Devoluciones','SIN CATALOGO':'Sin Catálogo'};
   document.getElementById('piso-titulo').textContent=LABELS[area]||area;
   var c=document.getElementById('piso-grid');
   if(!datosEstruc){c.innerHTML='<div style="color:var(--red)">Sin datos</div>';return;}
   var lista=(datosEstruc.pisosPorArea&&datosEstruc.pisosPorArea[area])||[];
-  if(!lista.length){c.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px">Sin ubicaciones en esta Ã¡rea</div>';return;}
+  if(!lista.length){c.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px">Sin ubicaciones en esta área</div>';return;}
   var html='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
   lista.forEach(function(u){
     var pct=u.cap>0?Math.round((u.hus/u.cap)*100):0;
@@ -846,7 +846,7 @@ function verDetalleUbicacion(id){
   celdas.forEach(function(c){c.style.opacity='0.5';c.style.transform='scale(0.96)';});
   apiGet({action:'ubicacionDetalle',id:id},function(e,r){
     celdas.forEach(function(c){c.style.opacity='';c.style.transform='';});
-    if(!r||!r.ok){alert('Error al cargar ubicaciÃ³n');return;}
+    if(!r||!r.ok){alert('Error al cargar ubicación');return;}
     abrirModalUbicacionDetalle(r);
   });
 }
@@ -856,8 +856,8 @@ function abrirModalUbicacionDetalle(r){
   var html='<div style="margin-bottom:14px"><div style="font-size:16px;font-weight:800;color:var(--orange)">'+u.id+'</div>'
     +'<div style="font-size:12px;color:var(--text2);margin-top:4px">'+r.total_hus+' HUs - Cap: '+(u.capacidad||'N/A')+' - '+p+'%</div>'
     +'<div style="height:5px;background:var(--surface2);border-radius:3px;margin-top:8px;overflow:hidden;border:1px solid var(--border)"><div style="height:100%;width:'+Math.min(p,100)+'%;background:'+cb+'"></div></div></div>';
-  html+='<button onclick="abrirEntradaEnUbi2(\''+u.id+'\')" style="width:100%;padding:13px;background:var(--green-dim);border:1.5px solid rgba(5,150,105,0.3);border-radius:var(--r-sm);color:var(--green);font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:14px">âŠ• Nueva Entrada aquÃ­</button>';
-  if(!r.items.length){html+='<div style="text-align:center;color:var(--text3);padding:20px">UbicaciÃ³n vacÃ­a</div>';}
+  html+='<button onclick="abrirEntradaEnUbi2(\''+u.id+'\')" style="width:100%;padding:13px;background:var(--green-dim);border:1.5px solid rgba(5,150,105,0.3);border-radius:var(--r-sm);color:var(--green);font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:14px">⊕ Nueva Entrada aquí</button>';
+  if(!r.items.length){html+='<div style="text-align:center;color:var(--text3);padding:20px">Ubicación vacía</div>';}
   else{r.items.forEach(function(x,ii){
     var dn=parseInt(x.dias),dc=isNaN(dn)?'ok':dn>=7?'alerta':dn>=3?'warn':'ok',dt=isNaN(dn)?'-':dn===0?'Hoy':dn+'d';
     html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">'
@@ -865,8 +865,8 @@ function abrirModalUbicacionDetalle(r){
       +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;font-family:DM Mono,monospace;color:var(--primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+x.hu+'</div>'
       +'<div style="font-size:10px;color:var(--text2);margin-top:2px">OV:'+x.ov+' SKU:'+x.sku+' '+x.bultos+'bts</div></div>'
       +'<span class="hu-item-dias '+dc+'" style="font-size:10px;padding:3px 8px;flex-shrink:0">'+dt+'</span>'
-      +'<button onclick="abrirSalidaUbi(\''+x.hu+'\',\''+x.ov+'\',\''+x.sku+'\','+x.bultos+')" style="width:44px;height:44px;background:var(--amber-dim);border:1.5px solid rgba(217,119,6,0.3);border-radius:10px;color:var(--amber);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">â†‘</button>'
-      +'<button onclick="abrirEditarHU(\''+x.hu+'\',\''+x.ov+'\',\''+x.sku+'\','+x.bultos+',\''+x.ubicacion+'\')" style="width:44px;height:44px;background:var(--primary-dim);border:1.5px solid rgba(79,70,229,0.3);border-radius:10px;color:var(--primary);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">âœŽ</button>'
+      +'<button onclick="abrirSalidaUbi(\''+x.hu+'\',\''+x.ov+'\',\''+x.sku+'\','+x.bultos+')" style="width:44px;height:44px;background:var(--amber-dim);border:1.5px solid rgba(217,119,6,0.3);border-radius:10px;color:var(--amber);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">↑</button>'
+      +'<button onclick="abrirEditarHU(\''+x.hu+'\',\''+x.ov+'\',\''+x.sku+'\','+x.bultos+',\''+x.ubicacion+'\')" style="width:44px;height:44px;background:var(--primary-dim);border:1.5px solid rgba(79,70,229,0.3);border-radius:10px;color:var(--primary);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">✎</button>'
       +'</div>';
   });}
   document.getElementById('modal-ubi-body').innerHTML=html;
@@ -919,8 +919,8 @@ function guardarEdicionHU(){
     else{mostrarMsg(document.getElementById('edit-msg'),'error',(r&&r.error)||'Error');document.getElementById('edit-msg').style.display='flex';}
   });
 }
-
-/* â”€â”€ USUARIOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── USUARIOS ───────────────────────────────────────────────────── */
 function cargarUsuarios(){
   var c=document.getElementById('usuarios-lista');
   c.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px">Cargando...</div>';
@@ -928,7 +928,7 @@ function cargarUsuarios(){
     if(!r||!r.ok){c.innerHTML='<div style="color:var(--red);padding:20px">Error</div>';return;}
     if(!r.usuarios.length){c.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px">Sin usuarios</div>';return;}
     c.innerHTML=r.usuarios.map(function(u){
-      return '<div class="user-row"><div class="user-avatar">'+u.alias.charAt(0)+'</div><div class="user-info"><div class="user-name">'+u.alias+'</div><span class="user-role '+u.rol.toLowerCase()+'">'+u.rol.toUpperCase()+'</span></div><div style="display:flex;gap:6px"><button class="btn-icon edit" onclick="abrirModalUsuario(\''+u.alias+'\')">âœŽ</button><button class="btn-icon del" onclick="eliminarUsuario(\''+u.alias+'\')">ðŸ—‘</button></div></div>';
+      return '<div class="user-row"><div class="user-avatar">'+u.alias.charAt(0)+'</div><div class="user-info"><div class="user-name">'+u.alias+'</div><span class="user-role '+u.rol.toLowerCase()+'">'+u.rol.toUpperCase()+'</span></div><div style="display:flex;gap:6px"><button class="btn-icon edit" onclick="abrirModalUsuario(\''+u.alias+'\')">✎</button><button class="btn-icon del" onclick="eliminarUsuario(\''+u.alias+'\')">🗑</button></div></div>';
     }).join('');
   });
 }
@@ -952,8 +952,8 @@ function guardarUsuario(){
   var orig=document.getElementById('usr-alias-orig').value;
   var msg=document.getElementById('usr-msg');
   if(!alias){mostrarMsg(msg,'error','El alias es obligatorio');msg.style.display='flex';return;}
-  if(!orig&&!pass){mostrarMsg(msg,'error','La contraseÃ±a es obligatoria');msg.style.display='flex';return;}
-  if(pass&&pass!==pass2){mostrarMsg(msg,'error','Las contraseÃ±as no coinciden');msg.style.display='flex';return;}
+  if(!orig&&!pass){mostrarMsg(msg,'error','La contraseña es obligatoria');msg.style.display='flex';return;}
+  if(pass&&pass!==pass2){mostrarMsg(msg,'error','Las contraseñas no coinciden');msg.style.display='flex';return;}
   mostrarLoading(true,'Guardando usuario...');
   apiGet({action:'guardarUsuario',alias:alias,password:pass,rol:rol,aliasOrig:orig},function(e,r){
     mostrarLoading(false);
@@ -962,7 +962,7 @@ function guardarUsuario(){
   });
 }
 function eliminarUsuario(alias){
-  if(!confirm('Â¿Eliminar usuario '+alias+'?'))return;
+  if(!confirm('¿Eliminar usuario '+alias+'?'))return;
   mostrarLoading(true,'Eliminando...');
   apiGet({action:'eliminarUsuario',alias:alias},function(e,r){
     mostrarLoading(false);
@@ -970,11 +970,11 @@ function eliminarUsuario(alias){
     else alert((r&&r.error)||'Error');
   });
 }
-
-/* â”€â”€ UTILIDADES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+ 
+/* ── UTILIDADES ─────────────────────────────────────────────────── */
 function mostrarLoading(v,m){ document.getElementById('loading-ov').classList.toggle('on',v); if(m)document.getElementById('loading-msg').textContent=m; }
 function mostrarMsg(el,t,m){ el.className='alert '+t; el.textContent=m; el.style.display='flex'; }
-
+ 
 document.getElementById('inp-pass').addEventListener('keydown',function(e){ if(e.key==='Enter') doLoginApp(); });
 </script>
 </body>
