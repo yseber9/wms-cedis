@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico</title>
+<style>
+body{font-family:sans-serif;background:#0D2137;color:#fff;padding:20px}
+.screen{display:none;padding:20px}
+.screen.active{display:block}
+.btn{background:#1565C0;color:#fff;border:none;padding:12px 20px;border-radius:8px;font-size:14px;cursor:pointer;margin:8px}
+#log{background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;margin-top:16px;font-size:12px;font-family:monospace;min-height:100px}
+</style>
+</head>
+<body>
+<div id="s-home" class="screen active">
+  <h2>✅ Home cargó</h2>
+  <button class="btn" onclick="irPantalla('s-a')">Pantalla A</button>
+  <button class="btn" onclick="irPantalla('s-b')">Pantalla B</button>
+  <button class="btn" onclick="testGAS()">Test GAS</button>
+  <div id="log">Iniciando...</div>
+</div>
+<div id="s-a" class="screen">
+  <h2>Pantalla A</h2>
+  <button class="btn" onclick="irPantalla('s-home')">← Volver</button>
+</div>
+<div id="s-b" class="screen">
+  <h2>Pantalla B</h2>
+  <button class="btn" onclick="irPantalla('s-home')">← Volver</button>
+</div>
+<script>
+var log = document.getElementById('log');
+function addLog(msg) {
+  log.innerHTML += '<br>' + new Date().toLocaleTimeString() + ': ' + msg;
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var el = document.getElementById(id);
+  if(el) el.classList.add('active');
+  else addLog('ERROR: no encontré elemento #' + id);
+}
+
+function irPantalla(id) {
+  addLog('navegando a ' + id);
+  show(id);
+}
+
+var API_URL = 'https://script.google.com/macros/s/AKfycbwZZb6bfnXOySjmWsqkjKH8DbfqlGeykp6RWEpfyC4CQfaT7_BZgcdmmw355Ir4z5HX/exec';
+
+function testGAS() {
+  addLog('llamando GAS...');
+  fetch(API_URL + '?action=testConexion')
+    .then(function(r){ addLog('status: ' + r.status); return r.json(); })
+    .then(function(d){ addLog('respuesta: ' + JSON.stringify(d)); })
+    .catch(function(e){ addLog('ERROR: ' + e.message); });
+}
+
+addLog('Script cargado OK');
+addLog('API: ' + API_URL.substring(0,50) + '...');
+</script>
+</body>
+</html>
