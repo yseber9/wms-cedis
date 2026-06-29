@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evaluación — Protocolo Operativo CEDIS Tultitlán</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;background:#f5f5f5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .wrap{max-width:480px;width:100%;text-align:center}
+    .logo{background:#C8102E;border-radius:16px;padding:32px 24px;margin-bottom:20px;color:#fff}
+    .logo h1{font-size:22px;font-weight:700;margin-bottom:8px}
+    .logo p{font-size:13px;opacity:.85}
+    .logo .icon{font-size:48px;margin-bottom:16px}
+    .card{background:#fff;border-radius:12px;border:1px solid #e5e5e5;padding:24px;margin-bottom:16px}
+    .card p{font-size:14px;color:#555;line-height:1.6;margin-bottom:16px}
+    .btn{display:block;width:100%;background:#C8102E;color:#fff;border:none;border-radius:8px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;margin-bottom:8px}
+    .btn:hover{background:#a00d25}
+    .note{font-size:12px;color:#999;margin-top:12px}
+    .pills{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:16px}
+    .pill{padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700}
+    .countdown{font-size:13px;color:#666;margin-top:8px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="icon">🚛</div>
+    <h1>Evaluación<br>Protocolo Operativo de Entrega</h1>
+    <p>CEDIS Tultitlán · Liverpool Logística · 2026</p>
+    <div class="pills">
+      <span class="pill" style="background:rgba(255,255,255,.2);color:#fff">Servicio al cliente</span>
+      <span class="pill" style="background:rgba(255,255,255,.2);color:#fff">Cuidado de la mercancía</span>
+      <span class="pill" style="background:rgba(255,255,255,.2);color:#fff">Comportamiento</span>
+      <span class="pill" style="background:rgba(255,255,255,.2);color:#fff">Malas prácticas</span>
+      <span class="pill" style="background:rgba(255,255,255,.2);color:#fff">Manejo de emociones</span>
+    </div>
+  </div>
+  <div class="card">
+    <p>Esta evaluación consta de <strong>15 preguntas</strong> aleatorias sobre el protocolo operativo de entrega. Tu resultado se guarda automáticamente.</p>
+    <p>Calificación mínima para aprobar: <strong>80%</strong> · Tiempo estimado: <strong>10–12 minutos</strong></p>
+    <a class="btn" id="btn-iniciar" href="https://script.google.com/macros/s/AKfycbyLzyxe5Eo7_yFIH2kpPAETQ54yN-3_iPvJN-WsdEVj5cFuq-hD_c69G6i6JEpjdor3/exec" target="_blank">
+      🚀 Iniciar evaluación
+    </a>
+    <div class="countdown" id="countdown">Redirigiendo automáticamente en <span id="secs">5</span> segundos...</div>
+    <div class="note">Si no redirige automáticamente, usa el botón de arriba.</div>
+  </div>
+</div>
+<script>
+  var secs = 5;
+  var url = 'https://script.google.com/macros/s/AKfycbyLzyxe5Eo7_yFIH2kpPAETQ54yN-3_iPvJN-WsdEVj5cFuq-hD_c69G6i6JEpjdor3/exec';
+  var timer = setInterval(function(){
+    secs--;
+    document.getElementById('secs').textContent = secs;
+    if(secs <= 0){
+      clearInterval(timer);
+      window.location.href = url;
+    }
+  }, 1000);
+</script>
+</body>
+</html>
