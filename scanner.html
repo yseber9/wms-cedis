@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Escaner Tepozpark</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+#scan-video{position:fixed;inset:0;width:100%;height:100%;}
+#scan-video video{width:100%;height:100%;object-fit:cover;}
+#scan-video canvas.drawingBuffer{position:absolute;top:0;left:0;width:100%;height:100%;}
+
+.scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:82%;max-width:340px;
+  height:120px;border:3px solid #2ab88a;border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.45);
+  pointer-events:none;z-index:2;overflow:hidden;}
+.scan-frame::before{content:'';position:absolute;left:0;right:0;top:6%;height:2px;
+  background:rgba(42,184,138,.9);animation:scanline 1.6s linear infinite;}
+@keyframes scanline{0%{top:6%}50%{top:92%}100%{top:6%}}
+
+.scan-top{position:absolute;top:0;left:0;right:0;padding:16px;display:flex;justify-content:space-between;
+  align-items:flex-start;z-index:3;background:linear-gradient(180deg,rgba(0,0,0,.7),transparent);}
+.scan-title{color:#fff;font-size:14px;font-weight:600;}
+.scan-sub{color:rgba(255,255,255,.65);font-size:11px;margin-top:3px;max-width:260px;line-height:1.4;}
+.scan-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.2);flex-shrink:0;}
+
+.scan-bottom{position:absolute;bottom:0;left:0;right:0;padding:18px 16px;display:flex;flex-direction:column;
+  gap:10px;background:linear-gradient(0deg,rgba(0,0,0,.8),transparent);z-index:3;}
+.scan-hint{color:rgba(255,255,255,.7);font-size:11px;text-align:center;}
+.scan-manual-btn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);
+  border-radius:10px;padding:12px;font-size:13px;text-align:center;cursor:pointer;}
+.scan-error{background:rgba(226,75,74,.92);color:#fff;font-size:12px;padding:10px 12px;border-radius:8px;
+  text-align:center;display:none;}
+.scan-result-flash{position:absolute;inset:0;background:rgba(42,184,138,.4);display:none;z-index:4;
+  align-items:center;justify-content:center;flex-direction:column;gap:8px;}
+.scan-result-flash .ok-icon{font-size:56px;}
+.scan-result-flash .ok-code{color:#fff;font-size:15px;font-weight:600;background:rgba(0,0,0,.35);
+  padding:4px 12px;border-radius:8px;}
+
+.no-camera{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;
+  background:#0a1628;z-index:5;}
+.no-camera-box{background:linear-gradient(180deg,#1a2f45,#132235);border-radius:16px;border:1px solid rgba(255,255,255,.12);
+  padding:24px;max-width:340px;width:100%;text-align:center;}
+.no-camera-box .ic{font-size:36px;margin-bottom:8px;}
+.no-camera-box p{color:rgba(255,255,255,.6);font-size:12px;line-height:1.6;margin-bottom:16px;}
+</style>
+</head>
+<body>
+
+<div id="scan-video"></div>
+<div class="scan-frame"></div>
+<div class="scan-result-flash" id="scan-flash">
+  <div class="ok-icon">&#9989;</div>
+  <div class="ok-code" id="scan-flash-code"></div>
+</div>
+
+<div class="scan-top">
+  <div>
+    <div class="scan-title" id="scan-title">Escanear codigo</div>
+    <div class="scan-sub" id="scan-sub">Centra el codigo de barras en el recuadro</div>
+  </div>
+  <div class="scan-close" onclick="cerrarVentana()">&#10005;</div>
+</div>
+
+<div class="scan-bottom">
+  <div class="scan-error" id="scan-error"></div>
+  <div class="scan-hint">Code 128 &middot; manten firme el telefono, a 10-15 cm</div>
+  <div class="scan-manual-btn" onclick="escanearManual()">&#9999; Escribir codigo manualmente</div>
+</div>
+
+<div class="no-camera" id="no-camera">
+  <div class="no-camera-box">
+    <div class="ic">&#128247;</div>
+    <p id="no-camera-msg">No se pudo acceder a la camara.</p>
+    <div class="scan-manual-btn" onclick="escanearManual()">&#9999; Escribir codigo manualmente</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script>
+// ============================================================
+// Escaner en vivo (pagina externa, fuera del iframe de Apps Script)
+// Recibe tipo/titulo/sub por query string y devuelve el resultado
+// a quien la abrio via window.opener.postMessage(...).
+// ============================================================
+var params  = new URLSearchParams(location.search);
+var tipo    = params.get('tipo')   || 'ov';
+var titulo  = params.get('titulo') || 'Escanear codigo';
+var sub     = params.get('sub')    || 'Centra el codigo de barras en el recuadro';
+
+document.getElementById('scan-title').textContent = titulo;
+document.getElementById('scan-sub').textContent   = sub;
+
+var activo = false;
+var buffer = [];
+var ultimaDeteccion = 0;
+
+function iniciar() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    mostrarSinCamara('Este navegador no permite acceso a camara. Usa entrada manual.');
+    return;
+  }
+
+  Quagga.init({
+    inputStream: {
+      type: 'LiveStream',
+      target: document.querySelector('#scan-video'),
+      constraints: {
+        facingMode: 'environment',
+        width:  { min: 640, ideal: 1280 },
+        height: { min: 480, ideal: 720 }
+      }
+      // Nota: se quito el recorte "area" — en QuaggaJS 0.12.x a veces hace que
+      // el detector nunca encuentre nada aunque la camara se vea bien.
+      // El recuadro verde sigue siendo solo una guia visual para el operador.
+    },
+    locator: { patchSize: 'large', halfSample: true },
+    // numOfWorkers:0 fuerza a decodificar en el hilo principal. Es un poco
+    // mas lento, pero evita que falle en silencio la carga de Web Workers
+    // en algunos navegadores moviles (sintoma tipico: camara viva, cero detecciones).
+    numOfWorkers: 0,
+    frequency: 10,
+    decoder: { readers: ['code_128_reader'] },
+    locate: true
+  }, function(err) {
+    if (err) {
+      console.error('Quagga init error:', err);
+      mostrarSinCamara('No se pudo iniciar la camara. Revisa que le diste permiso a este sitio.');
+      return;
+    }
+    activo = true;
+    Quagga.start();
+  });
+
+  Quagga.onDetected(onDetected);
+}
+
+function onDetected(data) {
+  if (!activo) return;
+  var code = data && data.codeResult && data.codeResult.code;
+  if (!code) return;
+
+  // Consenso simple: exige 2 lecturas iguales en las ultimas 4 para evitar falsos positivos
+  buffer.push(code);
+  if (buffer.length > 4) buffer.shift();
+  var iguales = buffer.filter(function(c){ return c === code; }).length;
+  if (iguales < 2) return;
+
+  var ahora = Date.now();
+  if (ahora - ultimaDeteccion < 800) return;
+  ultimaDeteccion = ahora;
+
+  confirmar(code);
+}
+
+function confirmar(code) {
+  activo = false;
+  try { Quagga.offDetected(onDetected); Quagga.stop(); } catch(e) {}
+  if (navigator.vibrate) { try { navigator.vibrate(80); } catch(e) {} }
+
+  document.getElementById('scan-flash-code').textContent = code;
+  document.getElementById('scan-flash').style.display = 'flex';
+
+  enviarResultado(code);
+}
+
+function enviarResultado(code) {
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage({ source: 'tepozpark-scanner', tipo: tipo, code: code }, '*');
+    }
+  } catch(e) {}
+  setTimeout(function() { window.close(); }, 500);
+}
+
+function mostrarSinCamara(msg) {
+  document.getElementById('no-camera-msg').textContent = msg;
+  document.getElementById('no-camera').style.display = 'flex';
+  var errEl = document.getElementById('scan-error');
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+}
+
+function cerrarVentana() {
+  try { Quagga.stop(); } catch(e) {}
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage({ source: 'tepozpark-scanner', tipo: tipo, cancelado: true }, '*');
+    }
+  } catch(e) {}
+  window.close();
+}
+
+function escanearManual() {
+  var label = tipo === 'pulmon' ? 'numero de pulmon' : 'numero de OV';
+  var val = prompt('Escribe el ' + label + ':');
+  if (val) enviarResultado(val.trim());
+}
+
+iniciar();
+</script>
+</body>
+</html>
