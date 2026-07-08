@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validador de Punteos — Liverpool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#F0F2F5;--surface:#fff;--navy:#0D2137;--blue:#1565C0;
+  --green:#1B7A3E;--red:#C0392B;--amber:#B45309;--gray:#8A97A8;
+  --red-dim:rgba(192,57,43,0.08);--green-dim:rgba(27,122,62,0.08);--amber-dim:rgba(180,83,9,0.08);
+  --border:#E2E6EF;--text:#0D1B2A;--text2:#4A5568;--text3:#8A97A8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* Header */
+.hdr{background:var(--navy);padding:14px 24px;display:flex;align-items:center;gap:14px}
+.hdr-logo{color:#64B5F6;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+.hdr h1{color:#fff;font-size:16px;font-weight:700;flex:1}
+.hdr-badge{font-size:10px;font-weight:600;color:#90CAF9;background:rgba(100,181,246,0.15);padding:3px 10px;border-radius:20px;border:1px solid rgba(100,181,246,0.3)}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:360px 1fr;height:calc(100vh - 54px)}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.map-col{position:relative}
+#map{width:100%;height:100%}
+
+/* Sidebar sections */
+.s-hdr{padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg)}
+.s-hdr h2{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.s-hdr p{font-size:11px;color:var(--text3)}
+
+/* Config section */
+.config{padding:14px 16px;border-bottom:1px solid var(--border)}
+.cfg-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.cfg-lbl{font-size:11px;font-weight:600;color:var(--text2);width:90px;flex-shrink:0}
+.cfg-inp{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:'JetBrains Mono',monospace;background:#fff;color:var(--text)}
+.cfg-inp:focus{outline:none;border-color:var(--blue)}
+.cfg-sel{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:#fff;color:var(--text);cursor:pointer}
+
+/* Upload */
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin:14px 16px}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:rgba(21,101,192,0.04)}
+.upload-zone input{display:none}
+.upload-icon{font-size:28px;margin-bottom:6px}
+.upload-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.upload-sub{font-size:10px;color:var(--text3)}
+
+/* Stats bar */
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border)}
+.stat{padding:10px 14px;text-align:center;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-n{font-size:20px;font-weight:800;line-height:1}
+.stat-lbl{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+/* Results list */
+.results{flex:1;overflow-y:auto}
+.filter-bar{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg)}
+.f-btn{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text2)}
+.f-btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.result-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.result-item:hover{background:var(--bg)}
+.result-item.selected{background:#EFF6FF;border-left:3px solid var(--blue)}
+.ri-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px}
+.ri-name{font-size:11px;font-weight:700;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ri-dist{font-size:10px;font-weight:800;padding:2px 7px;border-radius:12px;flex-shrink:0}
+.dist-ok{background:var(--green-dim);color:var(--green)}
+.dist-warn{background:var(--amber-dim);color:var(--amber)}
+.dist-bad{background:var(--red-dim);color:var(--red)}
+.ri-addr{font-size:10px;color:var(--text3);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ri-detail{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+
+/* Btn */
+.btn-run{width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin:0 16px;width:calc(100% - 32px);transition:opacity .2s}
+.btn-run:disabled{opacity:.5;cursor:not-allowed}
+
+/* Progress */
+.progress{padding:10px 16px;border-top:1px solid var(--border);display:none}
+.prog-bar-wrap{height:6px;background:var(--border);border-radius:6px;overflow:hidden;margin-bottom:5px}
+.prog-bar{height:100%;background:var(--blue);border-radius:6px;transition:width .3s}
+.prog-txt{font-size:10px;color:var(--text3)}
+
+/* Map info window */
+.info-box{background:#fff;border-radius:10px;padding:12px;max-width:260px;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
+.ib-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px}
+.ib-addr{font-size:10px;color:var(--text2);margin-bottom:6px}
+.ib-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px}
+.ib-key{color:var(--text3)}
+.ib-val{font-weight:600;color:var(--text)}
+
+/* Empty */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:var(--text3);flex:1}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.empty-title{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:5px}
+.empty-sub{font-size:11px;line-height:1.6}
+
+/* Export btn */
+.btn-export{display:none;margin:8px 16px;width:calc(100% - 32px);padding:8px;background:#fff;border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer}
+.btn-export:hover{border-color:var(--blue);color:var(--blue)}
+
+@media(max-width:768px){
+  .layout{grid-template-columns:1fr;grid-template-rows:50vh 1fr}
+  .sidebar{border-right:none;border-top:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-logo">Liverpool CEDIS</div>
+    <h1>Validador de Punteos</h1>
+  </div>
+  <div class="hdr-badge">SimpliRoute → Google Maps</div>
+</div>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="s-hdr">
+      <h2>Configuración</h2>
+      <p>Carga el Excel de SimpliRoute y valida las coordenadas</p>
+    </div>
+
+    <div class="config">
+      <div class="cfg-row">
+        <span class="cfg-lbl">API Key</span>
+        <input class="cfg-inp" id="api-key" type="password" placeholder="AIza..." value="AIzaSyBaPE-CzJdnGYnVADatJnX1lLRn7sVUCP0">
+      </div>
+      <div class="cfg-row">
+        <span class="cfg-lbl">Umbral alerta</span>
+        <select class="cfg-sel" id="threshold">
+          <option value="200" selected>200 m — recomendado</option>
+          <option value="300">300 m — moderado</option>
+          <option value="500">500 m — permisivo</option>
+          <option value="1000">1,000 m — solo graves</option>
+        </select>
+      </div>
+      <div class="cfg-row">
+        <span class="cfg-lbl">Muestra</span>
+        <select class="cfg-sel" id="sample">
+          <option value="0">Todas las entregas</option>
+          <option value="50">Primeras 50 (prueba)</option>
+          <option value="100">Primeras 100</option>
+          <option value="200">Primeras 200</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="upload-zone" id="upload-zone">
+      <input type="file" id="file-inp" accept=".xlsx,.xls,.csv">
+      <div class="upload-icon">📂</div>
+      <div class="upload-title" id="upload-title">Arrastra el Excel de SimpliRoute</div>
+      <div class="upload-sub" id="upload-sub">o toca para seleccionar · .xlsx, .xls, .csv</div>
+    </label>
+
+    <button class="btn-run" id="btn-run" onclick="iniciarValidacion()" disabled>
+      🔍 Validar punteos
+    </button>
+
+    <div class="stats" id="stats" style="display:none">
+      <div class="stat"><div class="stat-n" id="st-total" style="color:var(--text)">0</div><div class="stat-lbl">Total archivo</div></div>
+      <div class="stat"><div class="stat-n" id="st-warn" style="color:var(--amber)">0</div><div class="stat-lbl">Alertas</div></div>
+      <div class="stat"><div class="stat-n" id="st-bad" style="color:var(--red)">0</div><div class="stat-lbl">Críticos</div></div>
+    </div>
+
+    <div id="proc-summary" style="display:none;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border)"></div>
+
+    <div class="filter-bar" id="filter-bar" style="display:none">
+      <button class="f-btn on" onclick="setFilter('all',this)">Todos</button>
+      <button class="f-btn" onclick="setFilter('bad',this)">🔴 Punteo crítico</button>
+      <button class="f-btn" onclick="setFilter('warn',this)">🟡 Punteo alerta</button>
+      <button class="f-btn" onclick="setFilter('cp',this)">🟠 CP incorrecto</button>
+      <button class="f-btn" onclick="setFilter('nc',this)">⚪ No concluyente</button>
+    </div>
+
+    <div class="results" id="results">
+      <div class="empty">
+        <div class="empty-icon">📍</div>
+        <div class="empty-title">Sin datos aún</div>
+        <div class="empty-sub">Carga el Excel de SimpliRoute<br>y presiona "Validar punteos"</div>
+      </div>
+    </div>
+
+    <div class="progress" id="progress">
+      <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+      <div class="prog-txt" id="prog-txt">Preparando…</div>
+    </div>
+
+    <button class="btn-export" id="btn-export" onclick="exportarCSV()">📥 Exportar reporte CSV</button>
+  </div>
+
+  <!-- Mapa -->
+  <div class="map-col">
+    <div id="map"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+var registros = [];
+var resultados = [];
+var filtro = 'all';
+var map, infoWindow;
+var markers = [];
+
+// ── Cargar mapa ──────────────────────────────────────────────
+function initMap() {
+  var mapEl = document.getElementById('map');
+  if (!mapEl) return;
+  map = new google.maps.Map(mapEl, {
+    center: {lat: 19.43, lng: -99.13},
+    zoom: 10,
+    mapTypeControl: false,
+    streetViewControl: false,
+    styles: [
+      {featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}]},
+      {featureType:'transit',elementType:'labels',stylers:[{visibility:'off'}]}
+    ]
+  });
+  infoWindow = new google.maps.InfoWindow();
+}
+
+// ── Cargar archivo ───────────────────────────────────────────
+var dropZone = document.getElementById('upload-zone');
+dropZone.addEventListener('dragover', function(e){ e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', function(){ dropZone.classList.remove('drag'); });
+dropZone.addEventListener('drop', function(e){ e.preventDefault(); dropZone.classList.remove('drag'); procesarArchivo(e.dataTransfer.files[0]); });
+document.getElementById('file-inp').addEventListener('change', function(){ procesarArchivo(this.files[0]); });
+
+function procesarArchivo(file) {
+  if (!file) return;
+  document.getElementById('upload-title').textContent = file.name;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, {type:'binary'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var data = XLSX.utils.sheet_to_json(ws, {defval:''});
+      registros = data.filter(function(r){ return r['Latitud'] && r['Longitud']; });
+      document.getElementById('btn-run').disabled = registros.length === 0;
+      document.getElementById('upload-sub').textContent = registros.length + ' entregas con coordenadas cargadas';    } catch(err) {
+      alert('Error al leer el archivo: ' + err.message);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+// ── Validación principal ─────────────────────────────────────
+async function iniciarValidacion() {
+  var apiKey = document.getElementById('api-key').value.trim();
+  if (!apiKey) { alert('Ingresa tu API Key de Google Maps'); return; }
+  if (!registros.length) { alert('Carga primero el archivo Excel'); return; }
+
+  var threshold = parseInt(document.getElementById('threshold').value);
+  var sample = parseInt(document.getElementById('sample').value);
+  var lista = sample > 0 ? registros.slice(0, sample) : registros;
+  var totalArchivo = lista.length;
+
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('progress').style.display = 'block';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('stats').style.display = 'none';
+  document.getElementById('filter-bar').style.display = 'none';
+  document.getElementById('btn-export').style.display = 'none';
+  limpiarMarcadores();
+
+  resultados = [];
+  var total = lista.length;
+  var errores = 0;
+
+  for (var i = 0; i < lista.length; i++) {
+    var r = lista[i];
+    var pct = Math.round((i+1)/total*100);
+    document.getElementById('prog-bar').style.width = pct + '%';
+    document.getElementById('prog-txt').textContent = 'Validando ' + (i+1) + ' de ' + total + ': ' + (titulo||tracking);
+
+    var latSR = parseFloat(r['Latitud']);
+    var lngSR = parseFloat(r['Longitud']);
+    var dir = r['Dirección'] || r['Direccion'] || '';
+    var cp          = String(r['codigo_postal'] || '').trim();
+    var numInt      = String(r['Numero interior'] || '').trim();
+    var edificio    = String(r['edificio'] || '').trim();
+    var entreCalles = String(r['entre_calles_1'] || '').trim();
+    // Campos estructurados BI-BN
+    var calle     = String(r['Calle_cliente'] || '').trim();
+    var numExt    = String(r['Num_ext_cliente'] || '').trim();
+    var colonia   = String(r['Colonia_cliente'] || '').trim();
+    var municipio = String(r['Delegacion_municipio_cliente'] || '').trim();
+    var ciudad    = String(r['Ciudad_cliente'] || '').trim();
+    var estado    = String(r['Estado_cliente'] || '').trim();
+    var tracking = r['Tracking ID'] || r['Id de referencia'] || '';
+    var titulo = r['Título'] || r['Titulo'] || r['Responsable'] || '';
+
+    if (!dir || isNaN(latSR) || isNaN(lngSR)) continue;
+
+    try {
+      // ── Geocodificación — lógica limpia ──────────────────────
+      // CASO 1: Campos BI-BN disponibles → query estructurada con CP
+      // CASO 2: Sin campos → dirección concatenada SIN CP al inicio
+      //         CP se valida por separado al final
+      var queryGeo = '';
+      var usoCampos = false;
+
+      if (calle && calle.trim()) {
+        // Campos estructurados disponibles
+        usoCampos = true;
+        var mun = (municipio || ciudad || '').trim();
+        var parts = [calle.trim()];
+        if (numExt && numExt.trim()) parts.push(numExt.trim());
+        if (colonia && colonia.trim()) parts.push(colonia.trim());
+        if (mun) parts.push(mun);
+        if (cp) parts.push('CP ' + cp);
+        parts.push('México');
+        queryGeo = parts.join(', ');
+      } else {
+        // Sin campos estructurados: quitar CP del inicio y estado del final
+        var s = dir.trim();
+        s = s.replace(/^\d{5}\s+/, '');  // quitar CP inicial
+        s = s.replace(/\s+(MEX|DF|CMX|CDMX|EDO\.?\s*MEX|ESTADO DE MEXICO|HGO)\s*$/gi, '');
+        s = s.replace(/\s+(null|sn|s\/n)\s*$/gi, '');
+        s = s.replace(/\s{2,}/g, ' ').trim();
+        queryGeo = s + ', México';
+      }
+
+      var geo = await geocodificar(queryGeo, apiKey);
+
+      // ── Validación 2: Verificar CP vs municipio ────────────────
+      var errorCP = false;
+      var notaCP = '';
+      if (cp) {
+        var geoCP = await geocodificar('CP ' + cp + ', México', apiKey);
+        if (geoCP) {
+          var munCP = extraerMunicipio(geoCP.formatted);
+          var munDir2 = municipio || extraerMunicipioDireccion(dir);
+          if (munCP && munDir2 &&
+              !normalizar(munCP).includes(normalizar(munDir2)) &&
+              !normalizar(munDir2).includes(normalizar(munCP))) {
+            errorCP = true;
+            notaCP = '🟡 CP ' + cp + ' pertenece a ' + munCP + ' pero la dirección indica ' + munDir2;
+          }
+        }
+      }
+
+      if (geo) {
+        // Filtrar coordenadas fuera de México
+        if (geo.lat < 14.5 || geo.lat > 32.7 || geo.lng < -117.1 || geo.lng > -86.7) {
+          // Solo reportar si hay error de CP
+          if (errorCP) {
+            resultados.push({
+              idx: i, tracking: tracking, titulo: titulo, dir: dir,
+              latSR: latSR, lngSR: lngSR, latG: null, lngG: null,
+              distancia: 0, nivel: 'cp', dirGoogle: '', dirActualSR: '',
+              notaCP: notaCP, nota: notaCP, locType: ''
+            });
+          }
+          continue;
+        }
+
+        // Ignorar resultados poco precisos para validación de coordenadas
+        if (geo.locationType === 'GEOMETRIC_CENTER' || geo.locationType === 'APPROXIMATE') {
+          if (errorCP) {
+            resultados.push({
+              idx: i, tracking: tracking, titulo: titulo, dir: dir,
+              latSR: latSR, lngSR: lngSR, latG: null, lngG: null,
+              distancia: 0, nivel: 'cp', dirGoogle: '', dirActualSR: '',
+              notaCP: notaCP, nota: notaCP, locType: geo.locationType
+            });
+          }
+          continue;
+        }
+
+        var dist = haversine(latSR, lngSR, geo.lat, geo.lng);
+
+        // Para GEOMETRIC_CENTER usar umbral más permisivo (centroide de colonia puede estar a 500m del punto real)
+        var thresholdEfectivo = geo.locationType === 'GEOMETRIC_CENTER' ? Math.max(threshold * 3, 1500) : threshold;
+        var munGoogle = extraerMunicipio(geo.formatted);
+        var munDir = municipio || extraerMunicipioDireccion(dir);
+        var mismoMunicipio = !munGoogle || !munDir ||
+          normalizar(munGoogle).includes(normalizar(munDir)) ||
+          normalizar(munDir).includes(normalizar(munGoogle));
+
+        // Si Google ubica en municipio diferente → posible error de Google
+        // Solo reportar si también hay error de CP
+        if (!mismoMunicipio) {
+          if (errorCP) {
+            resultados.push({
+              idx: i, tracking: tracking, titulo: titulo, dir: dir,
+              latSR: latSR, lngSR: lngSR, latG: null, lngG: null,
+              distancia: 0, nivel: 'cp', dirGoogle: geo.formatted, dirActualSR: '',
+              notaCP: notaCP, nota: notaCP, locType: geo.locationType
+            });
+          }
+          continue;
+        }
+
+        // ── Mismo municipio: validar distancia ─────────────────
+        var nivel = dist < thresholdEfectivo ? 'ok' : dist < thresholdEfectivo*2 ? 'warn' : 'bad';
+        var precisionTag = geo.locationType === 'ROOFTOP' ? '🎯 Exacto' : '📍 Interpolado';
+        var busquedaTag  = '['+mejorTag+']';
+
+        // Geocodificación inversa de coordenadas SR
+        var dirSR = await geocodificarReversa(latSR, lngSR, apiKey);
+
+        // Construir notas
+        var notas = [];
+        if (errorCP) notas.push(notaCP);
+        if (nivel !== 'ok') {
+          notas.push(precisionTag + ' ' + busquedaTag
+            + ' · SR apunta a: "' + (dirSR || 'desconocido') + '"'
+            + ' — debe ser: "' + geo.formatted + '"'
+            + ' · Diferencia: ' + (dist >= 1000 ? (dist/1000).toFixed(2)+'km' : Math.round(dist)+'m'));
+        }
+
+        // Nivel final: si hay error de coordenadas usar ese nivel, si solo CP → 'cp'
+        var nivelFinal = nivel !== 'ok' ? nivel : (errorCP ? 'cp' : 'ok');
+
+        resultados.push({
+          idx: i, tracking: tracking, titulo: titulo, dir: dir,
+          latSR: latSR, lngSR: lngSR, latG: geo.lat, lngG: geo.lng,
+          distancia: Math.round(dist), nivel: nivelFinal,
+          dirGoogle: geo.formatted,
+          dirActualSR: dirSR || '',
+          notaCP: notaCP,
+          nota: notas.join(' | '),
+          locType: geo.locationType
+        });
+      } else if (errorCP) {
+        // No se pudo geocodificar pero hay error de CP
+        resultados.push({
+          idx: i, tracking: tracking, titulo: titulo, dir: dir,
+          latSR: latSR, lngSR: lngSR, latG: null, lngG: null,
+          distancia: 0, nivel: 'cp', dirGoogle: '', dirActualSR: '',
+          notaCP: notaCP, nota: notaCP, locType: ''
+        });
+      }
+    } catch(e) {
+      errores++;
+    }
+    // Pausa para no superar rate limit
+    if (i % 10 === 9) await sleep(200);
+  }
+
+  document.getElementById('progress').style.display = 'none';
+  document.getElementById('btn-run').disabled = false;
+  mostrarResultados(threshold, totalArchivo);
+}
+
+// ── Normalización para comparar municipios ───────────────────
+function normalizar(s) {
+  return (s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // quitar acentos
+    .replace(/\b(de|del|la|las|los|el)\b/g,'')       // quitar artículos
+    .replace(/[^a-z0-9\s]/g,'')
+    .replace(/\s+/g,' ').trim();
+}
+
+// Extraer municipio de la dirección formateada de Google
+// Formato: "Calle 123, Colonia, Municipio, CP Estado, País"
+function extraerMunicipio(formatted) {
+  if (!formatted) return '';
+  var partes = formatted.split(',').map(function(p){ return p.trim(); });
+  // El municipio suele ser la 3ra o 4ta parte
+  // Buscar la parte que no sea número, CP, estado o país conocido
+  var estadosMX = ['méx','mexico','cdmx','hgo','hidalgo','ciudad de mexico','estado de mexico'];
+  for (var i = partes.length - 3; i >= 1; i--) {
+    var p = partes[i].toLowerCase();
+    if (p.match(/^\d{5}/) || estadosMX.some(function(e){ return p.includes(e); })) continue;
+    // Limpiar CP del inicio si viene pegado
+    var clean = partes[i].replace(/^\d{5}\s*/,'').trim();
+    if (clean.length > 2) return clean;
+  }
+  return '';
+}
+
+// Extraer municipio de la dirección original de SR
+// Formato: "CP CALLE NUM COLONIA MUNICIPIO ESTADO"
+function extraerMunicipioDireccion(dir) {
+  if (!dir) return '';
+  // Quitar CP inicial
+  var s = dir.replace(/^\d{5}\s*/, '');
+  // Municipios conocidos en el área de operación
+  var municipios = [
+    'TULTITLAN','TLALNEPANTLA','ECATEPEC','NAUCALPAN','CUAUTITLAN IZCALLI',
+    'CUAUTITLAN','COACALCO','TECAMAC','ACOLMAN','ZUMPANGO','NEXTLALPAN',
+    'MELCHOR OCAMPO','TEOTIHUACAN','NICOLAS ROMERO','ATIZAPAN','TULTEPEC',
+    'TEOLOYUCAN','GUSTAVO A MADERO','AZCAPOTZALCO','IZTAPALAPA','VENUSTIANO CARRANZA',
+    'TULA DE ALLENDE','TEPEJI DEL RIO','TOLUCA','JILOTEPEC','HUEHUETOCA',
+    'JALTENCO','TONANITLA','ATENCO','TEXCOCO','ZUMPANGO DE OCAMPO',
+    'APAXCO','TEQUIXQUIAC','HUEYPOXTLA','TEMASCALAPA','AXAPUSCO',
+    'OTUMBA','SAN MARTIN DE LAS PIRAMIDES','NOPALTEPEC','PAPALOTLA',
+    'CHICOLOAPAN','CHIMALHUACAN','LA PAZ','NEZAHUALCOYOTL','IXTAPALUCA',
+    'CHALCO','CUAJIMALPA','ALVARO OBREGON','COYOACAN','XOCHIMILCO',
+    'TLAHUAC','MILPA ALTA','MAGDALENA CONTRERAS','BENITO JUAREZ',
+    'MIGUEL HIDALGO','CUAUHTEMOC','IZTACALCO','TIZAYUCA'
+  ];
+  var found = '';
+  var sUp = s.toUpperCase();
+  municipios.forEach(function(m){
+    if (sUp.includes(m) && m.length > (found.length)) found = m;
+  });
+  // Capitalizar
+  return found ? found.charAt(0)+found.slice(1).toLowerCase() : '';
+}
+
+// ── Geocodificación inversa (coords → dirección) ─────────────
+async function geocodificarReversa(lat, lng, apiKey) {
+  try {
+    var url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='
+      + lat + ',' + lng + '&language=es&key=' + apiKey;
+    var r = await fetch(url);
+    var d = await r.json();
+    if (d.status === 'OK' && d.results.length > 0) {
+      return d.results[0].formatted_address;
+    }
+  } catch(e) {}
+  return null;
+}
+
+// ── Geocodificación ──────────────────────────────────────────
+function limpiarDireccion(dir, cp, calle, numExt, colonia, municipio, ciudad) {
+  // CASO 1: Campos estructurados BI-BN disponibles
+  if (calle && calle.trim()) {
+    var mun = (municipio || ciudad || '').trim();
+    var partes = [calle.trim()];
+    if (numExt && numExt.trim()) partes.push(numExt.trim());
+    if (colonia && colonia.trim()) partes.push(colonia.trim());
+    if (mun) partes.push(mun);
+    if (cp && cp.trim()) partes.push('CP ' + cp.trim());
+    partes.push('México');
+    return {query: partes.join(', ').substring(0, 200), usoCamposEstructurados: true};
+  }
+
+  // CASO 2: Sin campos estructurados — usar dirección concatenada SIN el CP inicial
+  // El CP se valida por separado al final
+  var s = dir.trim();
+  // Quitar CP del inicio (5 dígitos al inicio)
+  s = s.replace(/^\d{5}\s+/, '').trim();
+  // Quitar abreviaciones de estado al final
+  s = s.replace(/\s+(MEX|DF|CMX|CDMX|EDO\.?\s*MEX|ESTADO DE MEXICO|HGO|JAL)\s*$/gi, '').trim();
+  // Quitar referencias sueltas al final (null, sn, s/n)
+  s = s.replace(/\s+(null|sn|s\/n)\s*$/gi, '').trim();
+  s = s.replace(/\s{2,}/g, ' ').trim();
+  return {query: (s + ', México').substring(0, 200), usoCamposEstructurados: false};
+}
+
+
+async function geocodificarReversa(lat, lng, apiKey) {
+  try {
+    var url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='
+      + lat + ',' + lng + '&language=es&key=' + apiKey;
+    var r = await fetch(url);
+    var d = await r.json();
+    if (d.status === 'OK' && d.results.length > 0) {
+      return d.results[0].formatted_address;
+    }
+  } catch(e) {}
+  return null;
+}
+
+// ── Geocodificación ──────────────────────────────────────────
+function parsearDireccion(dir, cp) {
+  if (!dir) return {calle:'', num:'', colonia:'', municipio:''};
+
+  // Formato: CP CALLE NUMERO COLONIA MUNICIPIO ESTADO [referencias]
+  var s = dir.trim();
+
+  // Quitar CP del inicio
+  s = s.replace(/^\d{5}\s+/, '');
+
+  // Quitar estado y referencias al final
+  s = s.replace(/\s+(MEX|DF|CMX|CDMX|EDO\.?\s*MEX|ESTADO DE MEXICO|HGO|JAL|NL|QRO)\b.*/gi, '');
+  s = s.replace(/\s+(null|sn|s\/n)\s*$/gi, '');
+  s = s.trim();
+
+  // Municipios conocidos para extraer
+  var municipios = [
+    'TULTITLAN','TLALNEPANTLA DE BAZ','TLALNEPANTLA','ECATEPEC DE MORELOS','ECATEPEC',
+    'NAUCALPAN DE JUAREZ','NAUCALPAN','CUAUTITLAN IZCALLI','CUAUTITLAN','COACALCO',
+    'TECAMAC','ACOLMAN','ZUMPANGO DE OCAMPO','ZUMPANGO','NEXTLALPAN','MELCHOR OCAMPO',
+    'NICOLAS ROMERO','ATIZAPAN DE ZARAGOZA','ATIZAPAN','TULTEPEC','TEOLOYUCAN',
+    'GUSTAVO A MADERO','AZCAPOTZALCO','IZTAPALAPA','VENUSTIANO CARRANZA','HUEHUETOCA',
+    'JALTENCO','TONANITLA','ATENCO','TEXCOCO','APAXCO','TEQUIXQUIAC','HUEYPOXTLA',
+    'CHICOLOAPAN','CHIMALHUACAN','LA PAZ','NEZAHUALCOYOTL','IXTAPALUCA','CHALCO',
+    'CUAJIMALPA','ALVARO OBREGON','COYOACAN','XOCHIMILCO','TLAHUAC','MILPA ALTA',
+    'BENITO JUAREZ','MIGUEL HIDALGO','CUAUHTEMOC','IZTACALCO','TIZAYUCA',
+    'TEMASCALAPA','TEOTIHUACAN','JILOTEPEC','TOLUCA'
+  ];
+
+  var munEncontrado = '';
+  var munIdx = -1;
+  var sUp = s.toUpperCase();
+
+  // Encontrar municipio más largo que coincida (para evitar falsos cortos)
+  municipios.forEach(function(m) {
+    var i = sUp.indexOf(m);
+    if (i > 0 && m.length > munEncontrado.length) {
+      munEncontrado = m;
+      munIdx = i;
+    }
+  });
+
+  var resto = munIdx > 0 ? s.substring(0, munIdx).trim() : s;
+  var municipio = munEncontrado;
+
+  // Del resto: extraer colonia (última parte), luego número, luego calle
+  // Formato típico: CALLE NUMERO COLONIA
+  var partes = resto.split(/\s+/);
+
+  // Número exterior: primer token que sea puramente numérico o alfanumérico corto
+  var numIdx = -1;
+  for (var i = 1; i < partes.length; i++) {
+    if (/^\d+[A-Za-z]?$|^[A-Za-z]?\d+$/.test(partes[i]) && partes[i].length <= 5) {
+      numIdx = i;
+      break;
+    }
+  }
+
+  var calle = numIdx > 0 ? partes.slice(0, numIdx).join(' ') : partes.slice(0, Math.ceil(partes.length/2)).join(' ');
+  var num   = numIdx > 0 ? partes[numIdx] : '';
+  var colonia = numIdx > 0 ? partes.slice(numIdx+1).join(' ') : partes.slice(Math.ceil(partes.length/2)).join(' ');
+
+  return {
+    calle: calle.trim(),
+    num: num.trim(),
+    colonia: colonia.trim(),
+    municipio: municipio.trim()
+  };
+}
+
+function limpiarDireccion(dir, cp, numInt, edificio, entreCalles, calle, numExt, colonia, municipio, ciudad, estado) {
+  // PRIORIDAD 1: campos estructurados BI-BN
+  if (calle && calle.trim()) {
+    var partes = [];
+    partes.push(calle.trim());
+    if (numExt && numExt.trim()) partes.push(numExt.trim());
+    if (colonia && colonia.trim()) partes.push(colonia.trim());
+    var mun = (municipio||ciudad||'').trim();
+    if (mun) partes.push(mun);
+    if (cp && cp.trim()) partes.push('CP ' + cp.trim());
+    partes.push('México');
+    return partes.join(', ').substring(0, 200);
+  }
+
+  // PRIORIDAD 2: parsear dirección concatenada
+  var p = parsearDireccion(dir, cp);
+  var partes2 = [];
+  if (p.calle) partes2.push(p.calle);
+  if (p.num)   partes2.push(p.num);
+  if (p.colonia) partes2.push(p.colonia);
+  if (p.municipio) partes2.push(p.municipio);
+  else if (cp) partes2.push('CP ' + cp);
+  partes2.push('México');
+  return partes2.join(', ').substring(0, 200);
+}
+
+async function geocodificar(direccion, apiKey) {
+  var url = 'https://maps.googleapis.com/maps/api/geocode/json?address='
+    + encodeURIComponent(direccion)
+    + '&region=mx&language=es&components=country:MX&key=' + apiKey;
+
+  var r = await fetch(url);
+  var d = await r.json();
+
+  if (d.status === 'OK' && d.results.length > 0) {
+    var res = d.results[0];
+    var loc = res.geometry.location;
+    var locType = res.geometry.location_type;
+
+    return {
+      lat: loc.lat,
+      lng: loc.lng,
+      formatted: res.formatted_address,
+      locationType: locType
+      // ROOFTOP = exacto, RANGE_INTERPOLATED = aceptable
+      // GEOMETRIC_CENTER = centroide colonia, APPROXIMATE = muy impreciso
+    };
+  }
+  return null;
+}
+
+// ── Haversine (metros entre 2 coords) ───────────────────────
+function haversine(lat1, lon1, lat2, lon2) {
+  var R = 6371000;
+  var dLat = (lat2-lat1) * Math.PI/180;
+  var dLon = (lon2-lon1) * Math.PI/180;
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2)
+        + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)
+        * Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+
+// ── Mostrar resultados ───────────────────────────────────────
+function mostrarResultados(threshold, totalArchivo) {
+  var bad   = resultados.filter(function(r){ return r.nivel==='bad'; }).length;
+  var warn  = resultados.filter(function(r){ return r.nivel==='warn'; }).length;
+  var cpErr = resultados.filter(function(r){ return r.nivel==='cp'; }).length;
+
+  document.getElementById('st-total').textContent = totalArchivo;
+  document.getElementById('st-warn').textContent  = warn + cpErr;
+  document.getElementById('st-bad').textContent   = bad;
+
+  // Resumen de procesamiento
+  var procesadas   = resultados.length;
+  var descartadas  = totalArchivo - procesadas;
+  var sinError     = procesadas - bad - warn - cpErr;
+  document.getElementById('stats').title =
+    procesadas + ' geocodificadas · ' + sinError + ' OK · ' + descartadas + ' sin resultado de Google';
+  document.getElementById('stats').style.display  = 'grid';
+  document.getElementById('filter-bar').style.display = 'flex';
+  document.getElementById('btn-export').style.display = 'block';
+
+  // Panel resumen de procesamiento
+  var procesadas  = resultados.length;
+  var sinError    = procesadas - bad - warn - cpErr;
+  var descartadas = totalArchivo - procesadas;
+  var sumEl = document.getElementById('proc-summary');
+  if (sumEl) {
+    sumEl.style.display = 'block';
+    sumEl.innerHTML =
+      '<div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Resumen de procesamiento</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px">'
+      +'<div style="color:var(--text2)">📂 Total en archivo:</div><div style="font-weight:700;color:var(--text)">'+totalArchivo+'</div>'
+      +'<div style="color:var(--text2)">✅ Geocodificadas:</div><div style="font-weight:700;color:var(--green)">'+procesadas+'</div>'
+      +'<div style="color:var(--text2)">🟢 Sin error:</div><div style="font-weight:700;color:var(--green)">'+sinError+'</div>'
+      +'<div style="color:var(--text2)">⚠ Con error:</div><div style="font-weight:700;color:var(--red)">'+(bad+warn+cpErr)+'</div>'
+      +'<div style="color:var(--text2)">⚪ Sin resultado Google:</div><div style="font-weight:700;color:var(--text3)">'+descartadas+'</div>'
+      +'</div>';
+  }
+
+  renderLista();
+  dibujarMarcadores();
+}
+
+function renderLista() {
+  var lista = resultados.filter(function(r){
+    if (filtro==='all') return r.nivel !== 'ok' || (r.nota && r.distancia===0);
+    if (filtro==='nc')  return r.nivel==='ok' && r.nota && r.distancia===0;
+    if (filtro==='cp')  return r.nivel==='cp';
+    if (filtro==='ok')  return r.nivel==='ok' && (!r.nota || r.distancia>0);
+    return r.nivel===filtro && r.distancia > 0;
+  });
+  lista.sort(function(a,b){ return b.distancia - a.distancia; });
+
+  if (!lista.length) {
+    document.getElementById('results').innerHTML =
+      '<div class="empty"><div class="empty-icon">✅</div>'
+      +'<div class="empty-title">Sin registros en este filtro</div></div>';
+    return;
+  }
+
+  var html = '';
+  lista.forEach(function(r) {
+    var cls, distStr;
+    if (r.nivel==='cp') {
+      cls = 'dist-warn'; distStr = 'CP';
+    } else {
+      cls = r.nivel==='bad'?'dist-bad':r.nivel==='warn'?'dist-warn':'dist-ok';
+      distStr = r.distancia >= 1000 ? (r.distancia/1000).toFixed(1)+' km' : r.distancia+' m';
+    }
+
+    html += '<div class="result-item" onclick="seleccionar('+r.idx+')" id="ri-'+r.idx+'">'
+      +'<div class="ri-top">'
+      +'<div class="ri-name">'+escHtml(r.titulo||r.tracking)+'</div>'
+      +'<span class="ri-dist '+cls+'">'+(r.nivel==='cp'?'🟠 CP':distStr)+'</span>'
+      +'</div>'
+      +'<div class="ri-addr" style="color:var(--text2);margin-bottom:3px">📝 '+escHtml(r.dir.substring(0,65))+'</div>'
+      +(r.notaCP?'<div style="font-size:9px;color:var(--amber);font-weight:700;margin-bottom:2px">🟠 '+escHtml(r.notaCP)+'</div>':'')
+      +(r.dirActualSR&&r.nivel!=='cp'?'<div class="ri-addr" style="color:var(--red)">📍 SR apunta a: '+escHtml(r.dirActualSR.substring(0,65))+'</div>':'')
+      +(r.dirGoogle&&r.nivel!=='cp'?'<div class="ri-addr" style="color:var(--green)">✅ Debe ser: '+escHtml(r.dirGoogle.substring(0,65))+'</div>':'')
+      +(r.distancia>0?'<div style="font-size:9px;font-weight:700;margin-top:3px;color:'+(r.nivel==='bad'?'var(--red)':r.nivel==='warn'?'var(--amber)':'var(--green)')+'">📏 Diferencia: '+distStr+'</div>':'')
+      +'</div>';
+  });
+  document.getElementById('results').innerHTML = html;
+}
+
+// ── Marcadores en mapa ───────────────────────────────────────
+function limpiarMarcadores() {
+  markers.forEach(function(m){ m.setMap(null); });
+  markers = [];
+}
+
+function dibujarMarcadores() {
+  limpiarMarcadores();
+  resultados.forEach(function(r) {
+    var colorSR = r.nivel==='bad'?'#C0392B':r.nivel==='warn'?'#B45309':'#1B7A3E';
+    var colorG  = '#1565C0';
+
+    // Marcador SimpliRoute
+    var mSR = new google.maps.Marker({
+      position: {lat: r.latSR, lng: r.lngSR},
+      map: map,
+      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7,
+              fillColor: colorSR, fillOpacity: 0.9, strokeColor: '#fff', strokeWeight: 1.5 },
+      title: r.titulo
+    });
+
+    // Marcador Google solo si hay diferencia significativa
+    if (r.nivel !== 'ok') {
+      var mG = new google.maps.Marker({
+        position: {lat: r.latG, lng: r.lngG},
+        map: map,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 5,
+                fillColor: colorG, fillOpacity: 0.7, strokeColor: '#fff', strokeWeight: 1 },
+        title: 'Google: ' + r.dirGoogle
+      });
+
+      // Línea entre los dos puntos
+      var linea = new google.maps.Polyline({
+        path: [{lat:r.latSR,lng:r.lngSR},{lat:r.latG,lng:r.lngG}],
+        geodesic: true, strokeColor: colorSR, strokeOpacity: 0.6, strokeWeight: 1.5, map: map
+      });
+      markers.push(mG, linea);
+    }
+
+    mSR.addListener('click', function(){ mostrarInfo(r); seleccionar(r.idx); });
+    markers.push(mSR);
+  });
+}
+
+function mostrarInfo(r) {
+  var distStr = r.distancia >= 1000 ? (r.distancia/1000).toFixed(2)+' km' : r.distancia+' m';
+  var nivel = r.nivel==='bad'?'🔴 Crítico':r.nivel==='warn'?'🟡 Alerta':'🟢 OK';
+  var content = '<div class="info-box">'
+    +'<div class="ib-title">'+escHtml(r.titulo)+'</div>'
+    +'<div class="ib-addr" style="margin-bottom:8px">'+escHtml(r.tracking)+'</div>'
+    +'<div style="font-size:10px;font-weight:700;color:#4A5568;margin-bottom:3px">📝 Dirección capturada:</div>'
+    +'<div style="font-size:10px;color:#0D1B2A;margin-bottom:8px">'+escHtml(r.dir.substring(0,90))+'</div>'
+    +(r.dirActualSR?
+      '<div style="font-size:10px;font-weight:700;color:#C0392B;margin-bottom:2px">❌ SR apunta actualmente a:</div>'
+      +'<div style="font-size:10px;color:#C0392B;margin-bottom:8px">'+escHtml(r.dirActualSR.substring(0,90))+'</div>'
+    :'')
+    +'<div style="font-size:10px;font-weight:700;color:#1B7A3E;margin-bottom:2px">✅ Coordenadas correctas:</div>'
+    +'<div style="font-size:10px;color:#1B7A3E;margin-bottom:8px">'+escHtml(r.dirGoogle.substring(0,90))+'</div>'
+    +'<div class="ib-row"><span class="ib-key">Distancia error</span>'
+    +'<span class="ib-val" style="color:'+(r.nivel==='bad'?'#C0392B':'#B45309')+'">'+distStr+'</span></div>'
+    +'<div class="ib-row"><span class="ib-key">Nivel</span><span class="ib-val">'+nivel+'</span></div>'
+    +'<div style="margin-top:8px;padding:6px;background:#EFF6FF;border-radius:5px;font-size:9px;color:#1565C0;font-weight:600">'
+    +'Corregir en SR: '+r.latG.toFixed(5)+', '+r.lngG.toFixed(5)+'</div>'
+    +'</div>';
+  infoWindow.setContent(content);
+  infoWindow.setPosition({lat: r.latSR, lng: r.lngSR});
+  infoWindow.open(map);
+}
+
+function seleccionar(idx) {
+  document.querySelectorAll('.result-item').forEach(function(el){ el.classList.remove('selected'); });
+  var el = document.getElementById('ri-'+idx);
+  if (el) { el.classList.add('selected'); el.scrollIntoView({block:'nearest'}); }
+  var r = resultados.find(function(x){ return x.idx===idx; });
+  if (r) { map.setCenter({lat:r.latSR,lng:r.lngSR}); map.setZoom(15); mostrarInfo(r); }
+}
+
+// ── Exportar CSV ─────────────────────────────────────────────
+function exportarCSV() {
+  // Solo exportar alertas y críticos — los que necesitan corrección
+  var problemas = resultados.filter(function(r){ return r.nivel !== 'ok'; });
+  problemas.sort(function(a,b){ return b.distancia - a.distancia; });
+
+  var filas = [[
+    'Tipo_Error',
+    'Distancia',
+    'Tracking_ID',
+    'Cliente',
+    'Direccion_capturada',
+    'CP_capturado',
+    'Error_CP',
+    'Lat_SR_actual',
+    'Lng_SR_actual',
+    'SR_apunta_a',
+    'Lat_correcta',
+    'Lng_correcta',
+    'Direccion_correcta',
+    'Accion'
+  ]];
+
+  problemas.forEach(function(r){
+    var tipo = [];
+    if (r.nivel==='bad') tipo.push('PUNTEO CRÍTICO');
+    else if (r.nivel==='warn') tipo.push('PUNTEO ALERTA');
+    if (r.nivel==='cp' || r.notaCP) tipo.push('CP INCORRECTO');
+    var dist = r.distancia >= 1000 ? (r.distancia/1000).toFixed(2)+' km' : (r.distancia||0)+' m';
+    var accion = [];
+    if (r.latG) accion.push('Corregir coords a: '+r.latG+', '+r.lngG);
+    if (r.notaCP) accion.push('Verificar CP con cliente');
+    filas.push([
+      tipo.join(' + '),
+      r.distancia > 0 ? dist : '—',
+      r.tracking,
+      r.titulo,
+      r.dir,
+      r.dir.match(/^\d{5}/)?r.dir.match(/^\d{5}/)[0]:'',
+      r.notaCP || '',
+      r.latSR || '',
+      r.lngSR || '',
+      r.dirActualSR || '',
+      r.latG || '',
+      r.lngG || '',
+      r.dirGoogle || '',
+      accion.join(' | ')
+    ]);
+  });
+
+  var csv = filas.map(function(f){
+    return f.map(function(c){
+      return '"'+(c||'').toString().replace(/"/g,'""')+'"';
+    }).join(',');
+  }).join('\n');
+
+  var blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'punteos_a_corregir_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+
+  // También mostrar resumen
+  setTimeout(function(){
+    alert('✅ Exportado\n\n'
+      + '📋 ' + problemas.length + ' entregas con punteos incorrectos\n'
+      + '🔴 Críticos: ' + problemas.filter(function(r){return r.nivel==='bad';}).length + '\n'
+      + '🟡 Alertas: ' + problemas.filter(function(r){return r.nivel==='warn';}).length + '\n\n'
+      + 'El CSV incluye las coordenadas correctas de Google\npara hacer la corrección directa en SimpliRoute.');
+  }, 500);
+}
+
+function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+
+<!-- Google Maps -->
+<script>
+window.initMap = window.initMap || function(){};
+(function(){
+  var s = document.createElement('script');
+  s.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBaPE-CzJdnGYnVADatJnX1lLRn7sVUCP0&callback=initMap&libraries=geometry';
+  s.async = true; s.defer = true;
+  s.onerror = function(){
+    document.getElementById('map').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:10px;color:#8A97A8">'
+      +'<div style="font-size:32px">🗺️</div>'
+      +'<div style="font-size:13px;font-weight:600">Sube el archivo a GitHub Pages</div>'
+      +'<div style="font-size:11px;text-align:center;max-width:300px">Google Maps no funciona desde archivo local.<br>Sube a <b>yseber9.github.io/wms-cedis/</b></div>'
+      +'</div>';
+  };
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
