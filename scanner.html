@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Escaner Tepozpark</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;}
+#scan-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000;}
+
+.overlay{position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:
+    linear-gradient(to right, rgba(0,0,0,.5) 0%, transparent 10%, transparent 90%, rgba(0,0,0,.5) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,.5) 0%, transparent 20%, transparent 80%, rgba(0,0,0,.5) 100%);
+}
+.scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:82%;max-width:340px;
+  height:120px;border:3px solid #2ab88a;border-radius:14px;pointer-events:none;z-index:2;overflow:hidden;}
+.scan-frame::before{content:'';position:absolute;left:0;right:0;top:6%;height:2px;
+  background:rgba(42,184,138,.9);animation:scanline 1.6s linear infinite;}
+@keyframes scanline{0%{top:6%}50%{top:92%}100%{top:6%}}
+
+.scan-top{position:absolute;top:0;left:0;right:0;padding:16px;display:flex;justify-content:space-between;
+  align-items:flex-start;z-index:3;background:linear-gradient(180deg,rgba(0,0,0,.7),transparent);}
+.scan-title{color:#fff;font-size:17px;font-weight:700;}
+.scan-sub{color:rgba(255,255,255,.7);font-size:13px;margin-top:4px;max-width:260px;line-height:1.45;}
+.scan-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.2);flex-shrink:0;}
+
+.scan-bottom{position:absolute;bottom:0;left:0;right:0;padding:18px 16px;display:flex;flex-direction:column;
+  gap:10px;background:linear-gradient(0deg,rgba(0,0,0,.8),transparent);z-index:3;}
+.scan-hint{color:rgba(255,255,255,.75);font-size:13px;text-align:center;}
+.manual-row{display:flex;gap:8px;}
+.manual-inp{flex:1;padding:15px 16px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);
+  border-radius:10px;color:#fff;font-size:17px;outline:none;font-family:inherit;}
+.manual-inp::placeholder{color:rgba(255,255,255,.4);}
+.manual-btn{padding:0 22px;background:#2ab88a;color:#fff;border:none;border-radius:10px;
+  font-size:16px;font-weight:700;cursor:pointer;}
+
+.scan-error{background:rgba(226,75,74,.92);color:#fff;font-size:12px;padding:10px 12px;border-radius:8px;
+  text-align:center;display:none;}
+.scan-result-flash{position:absolute;inset:0;background:rgba(42,184,138,.4);display:none;z-index:4;
+  align-items:center;justify-content:center;flex-direction:column;gap:8px;}
+.scan-result-flash .ok-icon{font-size:56px;}
+.scan-result-flash .ok-code{color:#fff;font-size:15px;font-weight:600;background:rgba(0,0,0,.35);
+  padding:4px 12px;border-radius:8px;}
+
+.no-camera{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;
+  background:#0a1628;z-index:5;}
+.no-camera-box{background:linear-gradient(180deg,#1a2f45,#132235);border-radius:16px;border:1px solid rgba(255,255,255,.12);
+  padding:24px;max-width:340px;width:100%;text-align:center;}
+.no-camera-box .ic{font-size:36px;margin-bottom:8px;}
+.no-camera-box p{color:rgba(255,255,255,.6);font-size:12px;line-height:1.6;margin-bottom:16px;}
+</style>
+</head>
+<body>
+
+<video id="scan-video" autoplay playsinline muted></video>
+<div class="overlay"></div>
+<div class="scan-frame"></div>
+<div class="scan-result-flash" id="scan-flash">
+  <div class="ok-icon">&#9989;</div>
+  <div class="ok-code" id="scan-flash-code"></div>
+</div>
+
+<div class="scan-top">
+  <div>
+    <div class="scan-title" id="scan-title">Escanear codigo</div>
+    <div class="scan-sub" id="scan-sub">Centra el codigo de barras en el recuadro</div>
+  </div>
+  <div class="scan-close" onclick="cerrarVentana()">&#10005;</div>
+</div>
+
+<div class="scan-bottom">
+  <div class="scan-error" id="scan-error"></div>
+  <div class="scan-hint">Deteccion automatica &middot; manten firme el telefono, a 10-15 cm</div>
+  <div class="manual-row">
+    <input class="manual-inp" id="manual-inp" type="text" placeholder="O escribe el codigo aqui...">
+    <button class="manual-btn" onclick="enviarManual()">OK</button>
+  </div>
+</div>
+
+<div class="no-camera" id="no-camera">
+  <div class="no-camera-box">
+    <div class="ic">&#128247;</div>
+    <p id="no-camera-msg">No se pudo acceder a la camara.</p>
+    <div class="manual-row" style="margin-top:4px;">
+      <input class="manual-inp" id="manual-inp-2" type="text" placeholder="Escribe el codigo aqui...">
+      <button class="manual-btn" onclick="enviarManual('manual-inp-2')">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Escaner en vivo (pagina externa, fuera del iframe de Apps Script)
+// Usa el BarcodeDetector NATIVO del navegador (Chrome/Android) — es
+// rapido y confiable. Se probaron 2 intentos de dar soporte a iPhone via
+// ZXing (libreria JS) y ambos empeoraron la experiencia (lecturas
+// erroneas en ambos telefonos) — se revirtio por completo mientras se
+// busca una mejor opcion. En navegadores sin BarcodeDetector nativo
+// (Safari/iPhone), se ofrece entrada manual de forma inmediata y clara.
+// ============================================================
+var params  = new URLSearchParams(location.search);
+var tipo    = params.get('tipo')   || 'ov';
+var titulo  = params.get('titulo') || 'Escanear codigo';
+var sub     = params.get('sub')    || 'Centra el codigo de barras en el recuadro';
+
+document.getElementById('scan-title').textContent = titulo;
+document.getElementById('scan-sub').textContent   = sub;
+
+var video      = document.getElementById('scan-video');
+var yaEnviado  = false;
+var detectando = false;
+
+async function iniciar() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    mostrarSinCamara('Este navegador no permite acceso a camara. Usa entrada manual.');
+    return;
+  }
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    video.srcObject = stream;
+    await video.play();
+    iniciarDetector();
+  } catch (err) {
+    mostrarSinCamara('No se pudo acceder a la camara: ' + (err && err.message ? err.message : err) + '. Revisa permisos o usa entrada manual.');
+  }
+}
+
+function iniciarDetector() {
+  if (!('BarcodeDetector' in window)) {
+    mostrarSinCamara('Este telefono no soporta lectura automatica de codigos (Safari/iPhone). Escribe el codigo manualmente abajo.');
+    return;
+  }
+
+  var detector = new BarcodeDetector({
+    formats: ['code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_39', 'itf', 'codabar']
+  });
+
+  function tick() {
+    if (yaEnviado) return;
+    if (!detectando && video.readyState === video.HAVE_ENOUGH_DATA) {
+      detectando = true;
+      detector.detect(video).then(function(codes) {
+        detectando = false;
+        if (yaEnviado) return;
+        if (codes.length > 0) {
+          var codigo = (codes[0].rawValue || '').trim();
+          if (codigo) confirmar(codigo);
+        }
+      }).catch(function() { detectando = false; });
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function confirmar(code) {
+  if (yaEnviado) return;
+  yaEnviado = true;
+
+  if (navigator.vibrate) { try { navigator.vibrate(80); } catch(e) {} }
+  document.getElementById('scan-flash-code').textContent = code;
+  document.getElementById('scan-flash').style.display = 'flex';
+
+  try { var s = video.srcObject; if (s) s.getTracks().forEach(function(t){ t.stop(); }); } catch(e) {}
+
+  enviarResultado(code);
+}
+
+function enviarResultado(code) {
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage({ source: 'tepozpark-scanner', tipo: tipo, code: code }, '*');
+    }
+  } catch(e) {}
+  setTimeout(function() { window.close(); }, 500);
+}
+
+function mostrarSinCamara(msg) {
+  document.getElementById('no-camera-msg').textContent = msg;
+  document.getElementById('no-camera').style.display = 'flex';
+  var errEl = document.getElementById('scan-error');
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+}
+
+function cerrarVentana() {
+  try { var s = video.srcObject; if (s) s.getTracks().forEach(function(t){ t.stop(); }); } catch(e) {}
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage({ source: 'tepozpark-scanner', tipo: tipo, cancelado: true }, '*');
+    }
+  } catch(e) {}
+  window.close();
+}
+
+function enviarManual(inputId) {
+  var inp = document.getElementById(inputId || 'manual-inp');
+  var val = inp.value.trim();
+  if (!val) return;
+  confirmar(val);
+}
+document.getElementById('manual-inp').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') enviarManual('manual-inp');
+});
+document.getElementById('manual-inp-2').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') enviarManual('manual-inp-2');
+});
+
+iniciar();
+</script>
+</body>
+</html>
