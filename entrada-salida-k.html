@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Módulo K — CR Tultitlán</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:#f2f2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow-x:hidden;}
+input,button{font-family:inherit;}
+.app{max-width:480px;margin:0 auto;min-height:100vh;background:#f2f2f7;display:flex;flex-direction:column;}
+.screen{display:none;flex:1;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* header */
+.topbar{background:#fff;padding:16px 16px 12px;border-bottom:0.5px solid #d1d1d6;display:flex;justify-content:space-between;align-items:center;}
+.topbar .title{color:#1c1c1e;font-size:17px;font-weight:600;}
+.topbar .sub{color:#8e8e93;font-size:12px;margin-top:2px;}
+.badge{display:flex;align-items:center;gap:6px;background:#f2f2f7;border-radius:14px;padding:4px 10px 4px 6px;}
+.badge .av{width:20px;height:20px;border-radius:50%;background:#007aff;color:#fff;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+.badge .nm{color:#3a3a3c;font-size:12px;font-weight:500;}
+.back{color:#007aff;font-size:15px;font-weight:500;cursor:pointer;}
+
+.content{flex:1;padding:14px 16px;overflow-y:auto;}
+.label{color:#8e8e93;font-size:11px;font-weight:600;letter-spacing:.02em;margin-bottom:8px;text-transform:uppercase;}
+.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.06);}
+.btn{width:100%;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:600;cursor:pointer;}
+.btn-primary{background:#007aff;color:#fff;}
+.btn-dark{background:#1c1c1e;color:#fff;}
+.btn-danger{background:#ff3b30;color:#fff;}
+.btn-light{background:#f2f2f7;color:#1c1c1e;}
+.btn-outline{background:transparent;color:#8e8e93;border:1px solid #d1d1d6;padding:11px;font-size:13px;font-weight:600;}
+.btn:disabled{opacity:.4;}
+.field-input{width:100%;border:none;background:transparent;font-size:15px;outline:none;color:#1c1c1e;}
+.input-wrap{background:#f2f2f7;border-radius:10px;padding:11px 14px;margin-bottom:12px;}
+.input-wrap.white{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06);}
+
+/* menu cards */
+.menu-card{background:#fff;border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px;cursor:pointer;}
+.menu-card .ic{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.menu-card .txt-title{color:#1c1c1e;font-size:16px;font-weight:600;}
+.menu-card .txt-sub{color:#8e8e93;font-size:12px;}
+.menu-card .chev{color:#c7c7cc;font-size:18px;}
+
+/* mode toggle pills */
+.mode-toggle{display:flex;background:#e5e5ea;border-radius:10px;padding:3px;margin-bottom:16px;}
+.mode-toggle .opt{flex:1;text-align:center;padding:8px 0;color:#8e8e93;font-size:13px;font-weight:500;border-radius:8px;cursor:pointer;}
+.mode-toggle .opt.active{background:#fff;color:#1c1c1e;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12);}
+
+.pill-row{display:flex;background:#e5e5ea;border-radius:10px;padding:3px;margin-bottom:18px;flex-wrap:wrap;gap:2px;}
+.pill-row .p{flex:1;min-width:44px;text-align:center;padding:8px 0;color:#8e8e93;font-size:13px;font-weight:500;border-radius:8px;cursor:pointer;}
+.pill-row .p.active{background:#fff;color:#1c1c1e;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12);}
+
+/* tuner control */
+.tuner{display:flex;align-items:center;justify-content:center;gap:14px;background:#fff;border-radius:16px;padding:10px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.06);}
+.tuner-btn{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#339dff,#007aff);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,122,255,.4),inset 0 1px 1px rgba(255,255,255,.5);cursor:pointer;flex-shrink:0;border:none;}
+.tuner-btn span{color:#fff;font-size:20px;font-weight:600;}
+.tuner input{width:80px;text-align:center;border:none;background:transparent;color:#1c1c1e;font-size:32px;font-weight:700;outline:none;}
+
+.stepper{display:flex;align-items:center;background:#fff;border-radius:14px;padding:4px;margin-bottom:18px;box-shadow:0 1px 2px rgba(0,0,0,.06);}
+.stepper-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#007aff;font-size:22px;font-weight:400;cursor:pointer;flex-shrink:0;border:none;background:transparent;}
+.stepper input{flex:1;text-align:center;border:none;background:transparent;color:#1c1c1e;font-size:20px;font-weight:700;outline:none;}
+
+.info-banner{border-radius:10px;padding:9px 12px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;}
+.info-banner.blue{background:#eaf3ff;color:#007aff;}
+.info-banner.green{color:#34c759;}
+.info-banner.amber{background:#fff6e5;color:#b8860b;}
+
+.status-tag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;}
+.status-ok{background:rgba(52,199,89,.15);color:#34c759;}
+.status-warn{background:rgba(255,149,0,.15);color:#ff9500;}
+.status-err{background:rgba(255,59,48,.15);color:#ff3b30;}
+
+/* block / alert screen */
+.block-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;text-align:center;}
+.block-icon{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:20px;}
+.block-title{color:#1c1c1e;font-size:19px;font-weight:700;margin-bottom:8px;}
+.block-msg{color:#636366;font-size:14px;line-height:1.5;margin-bottom:6px;}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+.modal-overlay.show{display:flex;}
+.modal-box{width:100%;max-width:300px;background:#fff;border-radius:18px;padding:20px;}
+.modal-title{color:#1c1c1e;font-size:16px;font-weight:700;margin-bottom:2px;text-align:center;}
+.modal-sub{color:#636366;font-size:13px;margin-bottom:14px;text-align:center;line-height:1.4;}
+.modal-btns{display:flex;gap:8px;margin-top:6px;}
+.modal-btns button{flex:1;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;}
+
+/* login */
+.login-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;}
+.login-logo{width:64px;height:64px;margin-bottom:18px;}
+.login-title{color:#1c1c1e;font-size:20px;font-weight:700;margin-bottom:4px;}
+.login-sub{color:#8e8e93;font-size:13px;margin-bottom:24px;}
+
+.result-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.06);}
+.result-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.result-lp{color:#1c1c1e;font-size:16px;font-weight:700;}
+.result-tag{color:#3a3a3c;font-size:12px;background:#f2f2f7;padding:3px 8px;border-radius:6px;font-weight:600;}
+.result-desc{color:#636366;font-size:13px;margin-bottom:12px;}
+.empty-note{color:#8e8e93;font-size:13px;text-align:center;padding:24px 0;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:60;display:none;max-width:80%;text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ===================== LOGIN ===================== -->
+  <div class="screen active" id="screen-login">
+    <div class="login-wrap">
+      <svg class="login-logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="56" height="56" rx="12" fill="#007aff" opacity="0.08"/>
+        <rect x="14" y="16" width="10" height="32" rx="2" fill="none" stroke="#007aff" stroke-width="2.4"/>
+        <rect x="27" y="16" width="10" height="32" rx="2" fill="none" stroke="#007aff" stroke-width="2.4"/>
+        <rect x="40" y="16" width="10" height="32" rx="2" fill="none" stroke="#007aff" stroke-width="2.4"/>
+      </svg>
+      <div class="login-title">Módulo K</div>
+      <div class="login-sub">CR Tultitlán · Marketplace</div>
+      <div class="input-wrap white" style="width:100%;">
+        <input type="password" id="loginPassword" class="field-input" placeholder="Contraseña" style="text-align:center;font-size:17px;">
+      </div>
+      <button class="btn btn-dark" id="loginBtn" style="width:100%;">Entrar</button>
+      <div id="loginError" style="color:#ff3b30;font-size:12px;margin-top:10px;text-align:center;"></div>
+    </div>
+  </div>
+
+  <!-- ===================== MENU ===================== -->
+  <div class="screen" id="screen-menu">
+    <div class="topbar">
+      <div>
+        <div class="sub">Módulo K · Marketplace</div>
+        <div class="title" id="menuGreeting">Hola</div>
+      </div>
+      <div class="badge" id="menuBadge"><div class="av" id="menuAvatar">?</div></div>
+    </div>
+    <div class="content">
+      <div class="menu-card" onclick="goTo('screen-entrada')">
+        <div class="ic" style="background:#eaf9ee;">📥</div>
+        <div style="flex:1;"><div class="txt-title">Entradas</div><div class="txt-sub">Escanear LP y guardar</div></div>
+        <div class="chev">›</div>
+      </div>
+      <div class="menu-card" onclick="goTo('screen-salida-mode')">
+        <div class="ic" style="background:#fff1ea;">📤</div>
+        <div style="flex:1;"><div class="txt-title">Salidas</div><div class="txt-sub">Dar de baja uno o varios LP</div></div>
+        <div class="chev">›</div>
+      </div>
+      <div class="menu-card" onclick="goTo('screen-consultas-mode')">
+        <div class="ic" style="background:#eaf3ff;">🔍</div>
+        <div style="flex:1;"><div class="txt-title">Consultas</div><div class="txt-sub">Ver inventario y corregir</div></div>
+        <div class="chev">›</div>
+      </div>
+      <div class="card" style="display:flex;justify-content:space-between;">
+        <span style="color:#8e8e93;font-size:12px;">Sesión activa</span>
+        <span style="color:#1c1c1e;font-size:12px;font-weight:600;" id="sessionInfo">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ENTRADA ===================== -->
+  <div class="screen" id="screen-entrada">
+    <div class="topbar">
+      <div class="back" onclick="goTo('screen-menu')">‹ Menú</div>
+      <div class="title">Entrada</div>
+      <div style="width:40px;"></div>
+    </div>
+    <div class="content">
+      <div id="entradaScanArea">
+        <button class="btn btn-primary" id="scanLpBtn" style="margin-bottom:14px;">📷 Escanear LP</button>
+        <div class="input-wrap white">
+          <input type="text" id="manualLpInput" class="field-input" placeholder="...o escribe el LP aquí">
+        </div>
+        <button class="btn btn-light" id="checkLpBtn" style="margin-bottom:6px;">Validar LP</button>
+      </div>
+
+      <div id="entradaFormArea" style="display:none;">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+            <div class="label" style="margin-bottom:0;">LP escaneado</div>
+            <span class="status-tag status-ok" id="entradaStatusTag">✓ Encontrado</span>
+          </div>
+          <div style="color:#1c1c1e;font-size:19px;font-weight:700;margin:4px 0;" id="entradaLpValue"></div>
+          <div style="color:#636366;font-size:13px;" id="entradaDescValue"></div>
+        </div>
+
+        <button class="btn btn-primary" style="margin-bottom:16px;" onclick="resetEntradaScan()">📷 Escanear otro LP</button>
+
+        <div class="label">Bultos (cuenta física)</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="changeBultos(-1)">−</button>
+          <input type="number" id="entradaBultos" value="1" min="1">
+          <button class="stepper-btn" onclick="changeBultos(1)">+</button>
+        </div>
+
+        <div class="label">Nivel</div>
+        <div class="pill-row" id="nivelPills"></div>
+
+        <div class="label">Posición (rack)</div>
+        <div class="tuner">
+          <button class="tuner-btn" onclick="changeRack(-1)"><span>▲</span></button>
+          <input type="number" id="entradaRack" value="1" min="1" max="36">
+          <button class="tuner-btn" onclick="changeRack(1)"><span>▼</span></button>
+        </div>
+
+        <div class="info-banner blue" id="posicionBanner">
+          <span id="posicionBannerText">Nivel 1 · Rack 1</span>
+          <span id="posicionBannerOcup">0 LPs aquí</span>
+        </div>
+
+        <button class="btn btn-dark" id="guardarEntradaBtn">Guardar entrada</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ENTRADA: bloqueo ===================== -->
+  <div class="screen" id="screen-entrada-block">
+    <div class="block-screen">
+      <div class="block-icon" id="blockIcon" style="background:#ffebeb;">⚠️</div>
+      <div class="block-title" id="blockTitle">Sin coincidencias</div>
+      <div class="block-msg" id="blockMsg1"></div>
+      <div class="block-msg" id="blockMsg2" style="margin-bottom:28px;"></div>
+      <button class="btn btn-dark" onclick="goTo('screen-menu')" style="width:100%;">Volver al menú</button>
+    </div>
+  </div>
+
+  <!-- ===================== SALIDA: modo ===================== -->
+  <div class="screen" id="screen-salida-mode">
+    <div class="topbar">
+      <div class="back" onclick="goTo('screen-menu')">‹ Menú</div>
+      <div class="title">Salidas</div>
+      <div style="width:40px;"></div>
+    </div>
+    <div class="content">
+      <div class="mode-toggle">
+        <div class="opt active" id="salidaModeLP" onclick="setSalidaMode('lp')">🔤 Por LP</div>
+        <div class="opt" id="salidaModePos" onclick="setSalidaMode('pos')">📍 Por posición</div>
+      </div>
+
+      <div id="salidaByLpArea">
+        <button class="btn btn-primary" id="scanSalidaLpBtn" style="margin-bottom:14px;">📷 Escanear LP</button>
+        <div class="input-wrap white">
+          <input type="text" id="salidaManualLp" class="field-input" placeholder="...o escribe el LP aquí">
+        </div>
+        <button class="btn btn-light" onclick="buscarSalidaPorLp()">Buscar</button>
+      </div>
+
+      <div id="salidaByPosArea" style="display:none;">
+        <div class="label">Nivel</div>
+        <div class="pill-row" id="salidaNivelPills"></div>
+        <div class="label">Rack</div>
+        <div class="tuner" style="margin-bottom:6px;">
+          <button class="tuner-btn" onclick="changeSalidaRack(-1)"><span>▲</span></button>
+          <input type="number" id="salidaRack" value="1" min="1" max="36">
+          <button class="tuner-btn" onclick="changeSalidaRack(1)"><span>▼</span></button>
+        </div>
+        <button class="btn btn-light" style="margin-bottom:6px;" onclick="buscarSalidaPorPosicion()">Ver LPs aquí</button>
+      </div>
+
+      <div id="salidaResults" style="margin-top:16px;"></div>
+
+      <div id="surtidoMultipleBar" style="display:none;position:sticky;bottom:0;background:#fff;border-radius:14px;padding:12px;box-shadow:0 -2px 8px rgba(0,0,0,.08);margin-top:10px;">
+        <div style="color:#1c1c1e;font-size:13px;font-weight:600;margin-bottom:8px;" id="surtidoCount">0 LPs seleccionados</div>
+        <button class="btn btn-danger" onclick="confirmarSurtidoMultiple()">Dar salida a seleccionados</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CONSULTAS: modo ===================== -->
+  <div class="screen" id="screen-consultas-mode">
+    <div class="topbar">
+      <div class="back" onclick="goTo('screen-menu')">‹ Menú</div>
+      <div class="title">Consultas</div>
+      <div style="width:40px;"></div>
+    </div>
+    <div class="content">
+      <div class="mode-toggle">
+        <div class="opt active" id="consultaModeLP" onclick="setConsultaMode('lp')">🔤 Por LP</div>
+        <div class="opt" id="consultaModePos" onclick="setConsultaMode('pos')">📍 Por posición</div>
+      </div>
+
+      <div id="consultaByLpArea">
+        <div class="input-wrap white">
+          <input type="text" id="consultaManualLp" class="field-input" placeholder="Escribe o pega el LP">
+        </div>
+        <button class="btn btn-light" onclick="buscarConsultaPorLp()">Buscar</button>
+      </div>
+
+      <div id="consultaByPosArea" style="display:none;">
+        <div class="label">Nivel</div>
+        <div class="pill-row" id="consultaNivelPills"></div>
+        <div class="label">Rack</div>
+        <div class="tuner" style="margin-bottom:6px;">
+          <button class="tuner-btn" onclick="changeConsultaRack(-1)"><span>▲</span></button>
+          <input type="number" id="consultaRack" value="1" min="1" max="36">
+          <button class="tuner-btn" onclick="changeConsultaRack(1)"><span>▼</span></button>
+        </div>
+        <button class="btn btn-light" style="margin-bottom:6px;" onclick="buscarConsultaPorPosicion()">Ver LPs aquí</button>
+      </div>
+
+      <div id="consultaResults" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== MODALES ===================== -->
+
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-title" id="confirmTitle">¿Seguro?</div>
+    <div class="modal-sub" id="confirmSub"></div>
+    <div id="confirmPasswordWrap" style="display:none;">
+      <div class="input-wrap" style="margin-bottom:14px;">
+        <input type="password" id="confirmPassword" class="field-input" placeholder="Contraseña" style="text-align:center;">
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-light" onclick="closeModal('confirmModal')">No</button>
+      <button class="btn-danger" id="confirmYesBtn">Sí</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title">Editar LP</div>
+    <div class="modal-sub">Requiere autorización de supervisor</div>
+    <div class="label">Bultos</div>
+    <div class="input-wrap" style="margin-bottom:10px;"><input type="number" id="editBultos" class="field-input" min="1"></div>
+    <div class="label">Nivel</div>
+    <div class="pill-row" id="editNivelPills" style="margin-bottom:4px;"></div>
+    <div class="label">Rack</div>
+    <div class="input-wrap" style="margin-bottom:10px;"><input type="number" id="editRack" class="field-input" min="1" max="36"></div>
+    <div class="label">Contraseña de supervisor</div>
+    <div class="input-wrap" style="margin-bottom:14px;"><input type="password" id="editPassword" class="field-input" placeholder="••••••"></div>
+    <div class="modal-btns">
+      <button class="btn-light" onclick="closeModal('editModal')">Cancelar</button>
+      <button class="btn-primary" id="editSaveBtn">Guardar cambio</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzmlUkzAIMk4fJhoaZH0131QN6Jcu_FPRWooqP8Nz8CDBd-S4zFHu3dhBPcFcgJSiXX/exec';
+const SCANNER_URL = 'scanner.html'; // debe vivir en el mismo repo/carpeta
+const SESSION_TIMEOUT_MIN = 20;
+const PASILLO = 'KK';
+
+async function apiGet(params){
+  const url = SHEETS_API_URL + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  return await res.json();
+}
+async function apiPost(body){
+  const res = await fetch(SHEETS_API_URL, { method:'POST', body: JSON.stringify(body) });
+  return await res.json();
+}
+
+// ============================================================
+// ESTRUCTURA KK (igual que la herramienta principal)
+// ============================================================
+function nivelesForRack(rack){
+  return rack <= 12 ? [1,2,3,4] : [1,2,3,4,5];
+}
+const MAX_RACK = 36;
+
+// ============================================================
+// SESIÓN
+// ============================================================
+let session = null; // { nombre, rol, ts }
+
+function loadSession(){
+  try{
+    const raw = localStorage.getItem('k-session');
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    if(Date.now() - s.ts > SESSION_TIMEOUT_MIN*60*1000) { localStorage.removeItem('k-session'); return null; }
+    return s;
+  }catch(e){ return null; }
+}
+function saveSession(s){ s.ts = Date.now(); localStorage.setItem('k-session', JSON.stringify(s)); session = s; }
+function touchSession(){ if(session){ session.ts = Date.now(); localStorage.setItem('k-session', JSON.stringify(session)); } }
+
+function goTo(screenId){
+  touchSession();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  if(screenId === 'screen-entrada') resetEntradaScan();
+  if(screenId === 'screen-salida-mode') initSalida();
+  if(screenId === 'screen-consultas-mode') initConsultas();
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+// ============================================================
+// LOGIN
+// ============================================================
+document.getElementById('loginBtn').onclick = async () => {
+  const pwd = document.getElementById('loginPassword').value.trim();
+  if(!pwd) return;
+  document.getElementById('loginBtn').textContent = 'Entrando…';
+  document.getElementById('loginBtn').disabled = true;
+  try{
+    const r = await apiPost({ action:'loginK', password: pwd });
+    if(r && r.ok){
+      saveSession({ nombre: r.nombre, rol: r.rol });
+      enterApp();
+    } else {
+      document.getElementById('loginError').textContent = (r && r.error) || 'Contraseña incorrecta';
+    }
+  }catch(err){
+    document.getElementById('loginError').textContent = 'Error de conexión, intenta de nuevo';
+  }
+  document.getElementById('loginBtn').textContent = 'Entrar';
+  document.getElementById('loginBtn').disabled = false;
+};
+document.getElementById('loginPassword').addEventListener('keydown', e => { if(e.key === 'Enter') document.getElementById('loginBtn').click(); });
+
+function enterApp(){
+  document.getElementById('menuGreeting').textContent = 'Hola, ' + session.nombre;
+  document.getElementById('menuAvatar').textContent = session.nombre.charAt(0).toUpperCase();
+  document.getElementById('sessionInfo').textContent = session.nombre + ' · ' + session.rol;
+  buildNivelPills('nivelPills', 1, (n) => selectNivel(n));
+  buildNivelPills('salidaNivelPills', 1, (n) => selectSalidaNivel(n));
+  buildNivelPills('consultaNivelPills', 1, (n) => selectConsultaNivel(n));
+  buildNivelPills('editNivelPills', 1, (n) => { editNivelSel = n; });
+  goTo('screen-menu');
+}
+
+(function initSession(){
+  session = loadSession();
+  if(session) enterApp();
+})();
+
+// ============================================================
+// ESCÁNER (reutiliza scanner.html vía postMessage)
+// ============================================================
+let scannerTargetInput = null;
+function openScanner(targetInputId){
+  scannerTargetInput = targetInputId;
+  const w = window.open(SCANNER_URL + '?tipo=lp&titulo=' + encodeURIComponent('Escanear LP') + '&sub=' + encodeURIComponent('Centra el código de barras del LP en el recuadro'), 'scanner', 'width=420,height=720');
+}
+window.addEventListener('message', (e) => {
+  if(!e.data || e.data.source !== 'tepozpark-scanner') return;
+  if(e.data.cancelado) return;
+  if(scannerTargetInput && e.data.code){
+    document.getElementById(scannerTargetInput).value = e.data.code;
+    if(scannerTargetInput === 'manualLpInput') document.getElementById('checkLpBtn').click();
+    if(scannerTargetInput === 'salidaManualLp') buscarSalidaPorLp();
+  }
+});
+
+// ============================================================
+// ENTRADA
+// ============================================================
+let entradaData = null; // { lp, bultos esperados, descripcion, estado }
+let nivelSel = 1;
+
+function buildNivelPills(containerId, defaultNivel, onSelect){
+  const el = document.getElementById(containerId);
+  el.innerHTML = [1,2,3,4,5].map(n => `<div class="p ${n===defaultNivel?'active':''}" data-n="${n}">N${n}</div>`).join('');
+  el.querySelectorAll('.p').forEach(p => p.onclick = () => {
+    el.querySelectorAll('.p').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+    onSelect(parseInt(p.dataset.n,10));
+  });
+}
+function selectNivel(n){ nivelSel = n; updatePosicionBanner(); }
+
+document.getElementById('scanLpBtn').onclick = () => openScanner('manualLpInput');
+document.getElementById('checkLpBtn').onclick = () => validarLp();
+document.getElementById('manualLpInput').addEventListener('keydown', e => { if(e.key==='Enter') validarLp(); });
+
+async function validarLp(){
+  const lp = document.getElementById('manualLpInput').value.trim();
+  if(!lp) return;
+  document.getElementById('checkLpBtn').textContent = 'Validando…';
+  try{
+    // 1) revisa si ya está activo en inventario-K (duplicado)
+    const inv = await apiGet({ action:'listInventarioK' });
+    const yaExiste = (inv.rows||[]).find(r => String(r.lp) === lp);
+    if(yaExiste){
+      showBlock('Ya está registrado', `El LP <b>${lp}</b> ya está guardado en la posición <b>${yaExiste.posicion}</b>.`, 'Consulta con tu supervisor si crees que esto es un error.', '#fff6e5', '📦');
+      return;
+    }
+    // 2) valida contra Arribos
+    const r = await apiPost({ action:'checkArribos', lp });
+    if(!r.encontrado){
+      showBlock('Sin coincidencias', `El LP <b>${lp}</b> no se encontró en la base.`, 'Favor de consultar con tu supervisor antes de continuar.', '#ffebeb', '⚠️');
+      return;
+    }
+    if(r.estado === 'ENTREGADA' || /ENTREGAD/i.test(r.estado||'')){
+      showBlock('Ya fue entregado', `El LP <b>${lp}</b> ya fue marcado como entregado.`, 'Consulta con tu supervisor antes de continuar.', '#ffebeb', '⚠️');
+      return;
+    }
+    entradaData = { lp, bultosEsperados: r.bultos, descripcion: r.descripcion, estado: r.estado, cancelado: r.estado === 'CANCELADA' };
+    showEntradaForm();
+  }catch(err){
+    showToast('Error de conexión — intenta de nuevo');
+  }
+  document.getElementById('checkLpBtn').textContent = 'Validar LP';
+}
+
+function showBlock(title, msg1, msg2, bg, icon){
+  document.getElementById('blockTitle').textContent = title;
+  document.getElementById('blockMsg1').innerHTML = msg1;
+  document.getElementById('blockMsg2').textContent = msg2;
+  document.getElementById('blockIcon').style.background = bg;
+  document.getElementById('blockIcon').textContent = icon;
+  goTo('screen-entrada-block');
+}
+
+function showEntradaForm(){
+  document.getElementById('entradaScanArea').style.display = 'none';
+  document.getElementById('entradaFormArea').style.display = 'block';
+  document.getElementById('entradaLpValue').textContent = entradaData.lp;
+  document.getElementById('entradaDescValue').textContent = entradaData.descripcion || '(sin descripción en Arribos)';
+  const tag = document.getElementById('entradaStatusTag');
+  if(entradaData.cancelado){
+    tag.textContent = '⚠ Cancelado'; tag.className = 'status-tag status-warn';
+  } else {
+    tag.textContent = '✓ Encontrado'; tag.className = 'status-tag status-ok';
+  }
+  document.getElementById('entradaBultos').value = 1;
+  document.getElementById('entradaRack').value = 1;
+  nivelSel = 1;
+  updatePosicionBanner();
+}
+
+function resetEntradaScan(){
+  entradaData = null;
+  document.getElementById('manualLpInput').value = '';
+  document.getElementById('entradaScanArea').style.display = 'block';
+  document.getElementById('entradaFormArea').style.display = 'none';
+}
+
+function changeBultos(delta){
+  const inp = document.getElementById('entradaBultos');
+  let v = Math.max(1, (parseInt(inp.value,10)||1) + delta);
+  inp.value = v;
+}
+function changeRack(delta){
+  const inp = document.getElementById('entradaRack');
+  let v = parseInt(inp.value,10) || 1;
+  v = Math.min(MAX_RACK, Math.max(1, v - delta)); // ▲ sube el número, ▼ baja (delta invertido para sensación de "sintonizador")
+  inp.value = v;
+  updatePosicionBanner();
+}
+document.getElementById('entradaRack').addEventListener('input', updatePosicionBanner);
+
+async function updatePosicionBanner(){
+  const rack = parseInt(document.getElementById('entradaRack').value,10) || 1;
+  document.getElementById('posicionBannerText').textContent = `Nivel ${nivelSel} · Rack ${rack}`;
+  try{
+    const inv = await apiGet({ action:'listInventarioK' });
+    const posStr = posicionStr(nivelSel, rack);
+    const count = (inv.rows||[]).filter(r => r.posicion === posStr).length;
+    document.getElementById('posicionBannerOcup').textContent = count + ' LP(s) aquí';
+  }catch(e){}
+}
+function posicionStr(nivel, rack){ return `${PASILLO}-${String(rack).padStart(2,'0')}-${String(nivel).padStart(2,'0')}`; }
+
+document.getElementById('guardarEntradaBtn').onclick = () => {
+  const bultos = parseInt(document.getElementById('entradaBultos').value,10) || 1;
+  const rack = parseInt(document.getElementById('entradaRack').value,10) || 1;
+  const posicion = posicionStr(nivelSel, rack);
+  const discrepancia = entradaData.bultosEsperados != null && Number(entradaData.bultosEsperados) !== bultos;
+
+  document.getElementById('confirmTitle').textContent = '¿Seguro que desea guardar?';
+  document.getElementById('confirmSub').innerHTML = `LP <b>${entradaData.lp}</b> · ${bultos} bulto(s) en <b>${posicion}</b>` + (discrepancia ? `<br><span style="color:#ff9500;">⚠ Los bultos capturados no coinciden con Arribos (${entradaData.bultosEsperados})</span>` : '');
+  document.getElementById('confirmPasswordWrap').style.display = 'none';
+  document.getElementById('confirmYesBtn').className = 'btn-dark';
+  document.getElementById('confirmYesBtn').onclick = async () => {
+    closeModal('confirmModal');
+    try{
+      await apiPost({ action:'entradaK', lp: entradaData.lp, bultos, posicion, operador: session.nombre, bultosEsperados: entradaData.bultosEsperados, discrepancia, estado: entradaData.estado });
+      showToast('✓ Entrada guardada');
+      goTo('screen-menu');
+    }catch(err){ showToast('⚠ Error al guardar, intenta de nuevo'); }
+  };
+  openModal('confirmModal');
+};
+
+// ============================================================
+// SALIDA
+// ============================================================
+let salidaMultiMode = false;
+let salidaSeleccionados = [];
+
+function initSalida(){
+  setSalidaMode('lp');
+  document.getElementById('salidaResults').innerHTML = '';
+  salidaSeleccionados = [];
+  updateSurtidoBar();
+}
+function setSalidaMode(mode){
+  document.getElementById('salidaModeLP').classList.toggle('active', mode==='lp');
+  document.getElementById('salidaModePos').classList.toggle('active', mode==='pos');
+  document.getElementById('salidaByLpArea').style.display = mode==='lp' ? 'block' : 'none';
+  document.getElementById('salidaByPosArea').style.display = mode==='pos' ? 'block' : 'none';
+  document.getElementById('salidaResults').innerHTML = '';
+}
+let salidaNivelSel = 1;
+function selectSalidaNivel(n){ salidaNivelSel = n; }
+function changeSalidaRack(delta){
+  const inp = document.getElementById('salidaRack');
+  let v = parseInt(inp.value,10)||1;
+  v = Math.min(MAX_RACK, Math.max(1, v - delta));
+  inp.value = v;
+}
+document.getElementById('scanSalidaLpBtn').onclick = () => openScanner('salidaManualLp');
+document.getElementById('salidaManualLp').addEventListener('keydown', e => { if(e.key==='Enter') buscarSalidaPorLp(); });
+
+async function buscarSalidaPorLp(){
+  const lp = document.getElementById('salidaManualLp').value.trim();
+  if(!lp) return;
+  try{
+    const inv = await apiGet({ action:'listInventarioK' });
+    const found = (inv.rows||[]).find(r => String(r.lp) === lp);
+    if(!found){ showToast('LP no encontrado en inventario'); document.getElementById('salidaResults').innerHTML=''; return; }
+    renderSalidaResults([found]);
+  }catch(e){ showToast('Error de conexión'); }
+}
+async function buscarSalidaPorPosicion(){
+  const rack = parseInt(document.getElementById('salidaRack').value,10)||1;
+  const posStr = posicionStr(salidaNivelSel, rack);
+  try{
+    const inv = await apiGet({ action:'listInventarioK' });
+    const found = (inv.rows||[]).filter(r => r.posicion === posStr);
+    if(found.length===0){ document.getElementById('salidaResults').innerHTML = '<div class="empty-note">Sin LPs guardados en esta posición.</div>'; return; }
+    renderSalidaResults(found);
+  }catch(e){ showToast('Error de conexión'); }
+}
+function renderSalidaResults(rows){
+  const el = document.getElementById('salidaResults');
+  el.innerHTML = rows.map(r => `
+    <div class="result-card" id="salida-card-${r.lp}">
+      <div class="result-top"><div class="result-lp">${r.lp}</div><div class="result-tag">${r.bultos} bultos</div></div>
+      <div class="result-desc">${r.posicion} · entró ${r.fechaEntrada}</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-danger" style="flex:1;" onclick="confirmarSalidaUnica('${r.lp}','${r.posicion}',${r.bultos})">Dar salida</button>
+        <button class="btn btn-light" style="flex:1;" onclick="toggleSurtido('${r.lp}','${r.posicion}',${r.bultos})" id="surtido-btn-${r.lp}">+ Selección múltiple</button>
+      </div>
+    </div>`).join('');
+}
+function toggleSurtido(lp, posicion, bultos){
+  const idx = salidaSeleccionados.findIndex(x=>x.lp===lp);
+  const btn = document.getElementById('surtido-btn-'+lp);
+  if(idx>=0){ salidaSeleccionados.splice(idx,1); btn.textContent='+ Selección múltiple'; btn.className='btn btn-light'; }
+  else { salidaSeleccionados.push({lp,posicion,bultos}); btn.textContent='✓ Seleccionado'; btn.className='btn btn-primary'; }
+  updateSurtidoBar();
+}
+function updateSurtidoBar(){
+  const bar = document.getElementById('surtidoMultipleBar');
+  if(salidaSeleccionados.length>0){ bar.style.display='block'; document.getElementById('surtidoCount').textContent = salidaSeleccionados.length + ' LPs seleccionados'; }
+  else bar.style.display='none';
+}
+function confirmarSalidaUnica(lp, posicion, bultos){
+  document.getElementById('confirmTitle').textContent = '¿Seguro que desea dar salida?';
+  document.getElementById('confirmSub').innerHTML = `LP <b>${lp}</b> · ${bultos} bulto(s) saldrán de <b>${posicion}</b>`;
+  document.getElementById('confirmPasswordWrap').style.display = 'block';
+  document.getElementById('confirmPassword').value = '';
+  document.getElementById('confirmYesBtn').className = 'btn-danger';
+  document.getElementById('confirmYesBtn').textContent = 'Sí, dar salida';
+  document.getElementById('confirmYesBtn').onclick = async () => {
+    const pwd = document.getElementById('confirmPassword').value.trim();
+    const check = await apiPost({ action:'loginK', password: pwd });
+    if(!check.ok){ showToast('Contraseña incorrecta'); return; }
+    closeModal('confirmModal');
+    try{
+      await apiPost({ action:'salidaK', lp, operador: check.nombre });
+      showToast('✓ Salida registrada');
+      goTo('screen-menu');
+    }catch(e){ showToast('⚠ Error al procesar, intenta de nuevo'); }
+  };
+  openModal('confirmModal');
+}
+function confirmarSurtidoMultiple(){
+  document.getElementById('confirmTitle').textContent = '¿Confirmar salida múltiple?';
+  document.getElementById('confirmSub').innerHTML = `${salidaSeleccionados.length} LP(s) saldrán del inventario`;
+  document.getElementById('confirmPasswordWrap').style.display = 'block';
+  document.getElementById('confirmPassword').value = '';
+  document.getElementById('confirmYesBtn').className = 'btn-danger';
+  document.getElementById('confirmYesBtn').textContent = 'Sí, dar salida a todos';
+  document.getElementById('confirmYesBtn').onclick = async () => {
+    const pwd = document.getElementById('confirmPassword').value.trim();
+    const check = await apiPost({ action:'loginK', password: pwd });
+    if(!check.ok){ showToast('Contraseña incorrecta'); return; }
+    closeModal('confirmModal');
+    try{
+      for(const item of salidaSeleccionados){ await apiPost({ action:'salidaK', lp: item.lp, operador: check.nombre }); }
+      showToast('✓ ' + salidaSeleccionados.length + ' salidas registradas');
+      goTo('screen-menu');
+    }catch(e){ showToast('⚠ Error al procesar, intenta de nuevo'); }
+  };
+  openModal('confirmModal');
+}
+
+// ============================================================
+// CONSULTAS
+// ============================================================
+let consultaNivelSel = 1;
+let editNivelSel = 1;
+
+function initConsultas(){
+  setConsultaMode('lp');
+  document.getElementById('consultaResults').innerHTML = '';
+}
+function setConsultaMode(mode){
+  document.getElementById('consultaModeLP').classList.toggle('active', mode==='lp');
+  document.getElementById('consultaModePos').classList.toggle('active', mode==='pos');
+  document.getElementById('consultaByLpArea').style.display = mode==='lp' ? 'block' : 'none';
+  document.getElementById('consultaByPosArea').style.display = mode==='pos' ? 'block' : 'none';
+  document.getElementById('consultaResults').innerHTML = '';
+}
+function selectConsultaNivel(n){ consultaNivelSel = n; }
+function changeConsultaRack(delta){
+  const inp = document.getElementById('consultaRack');
+  let v = parseInt(inp.value,10)||1;
+  v = Math.min(MAX_RACK, Math.max(1, v - delta));
+  inp.value = v;
+}
+document.getElementById('consultaManualLp').addEventListener('keydown', e => { if(e.key==='Enter') buscarConsultaPorLp(); });
+
+async function buscarConsultaPorLp(){
+  const lp = document.getElementById('consultaManualLp').value.trim();
+  if(!lp) return;
+  try{
+    const inv = await apiGet({ action:'listInventarioK' });
+    const found = (inv.rows||[]).filter(r => String(r.lp).toLowerCase().includes(lp.toLowerCase()));
+    renderConsultaResults(found);
+  }catch(e){ showToast('Error de conexión'); }
+}
+async function buscarConsultaPorPosicion(){
+  const rack = parseInt(document.getElementById('consultaRack').value,10)||1;
+  const posStr = posicionStr(consultaNivelSel, rack);
+  try{
+    const inv = await apiGet({ action:'listInventarioK' });
+    const found = (inv.rows||[]).filter(r => r.posicion === posStr);
+    renderConsultaResults(found);
+  }catch(e){ showToast('Error de conexión'); }
+}
+function renderConsultaResults(rows){
+  const el = document.getElementById('consultaResults');
+  if(rows.length===0){ el.innerHTML = '<div class="empty-note">Sin resultados.</div>'; return; }
+  el.innerHTML = rows.map(r => `
+    <div class="result-card">
+      <div class="result-top"><div class="result-lp">${r.lp}</div><div class="result-tag">${r.posicion}</div></div>
+      <div class="result-desc">${r.bultos} bulto(s) · entró ${r.fechaEntrada} · por ${r.operador}</div>
+      <button class="btn-outline" style="width:100%;" onclick='openEditModal(${JSON.stringify(r)})'>✏️ Editar (supervisor)</button>
+    </div>`).join('');
+}
+
+function openEditModal(row){
+  document.getElementById('editBultos').value = row.bultos;
+  const parts = String(row.posicion).split('-'); // KK-RR-NN
+  const rack = parseInt(parts[1],10) || 1;
+  const nivel = parseInt(parts[2],10) || 1;
+  document.getElementById('editRack').value = rack;
+  editNivelSel = nivel;
+  buildNivelPills('editNivelPills', nivel, (n) => { editNivelSel = n; });
+  document.getElementById('editPassword').value = '';
+  document.getElementById('editSaveBtn').onclick = async () => {
+    const pwd = document.getElementById('editPassword').value.trim();
+    const check = await apiPost({ action:'loginK', password: pwd });
+    if(!check.ok || check.rol !== 'Supervisor'){ showToast('Requiere contraseña de supervisor válida'); return; }
+    const bultos = Math.max(1, parseInt(document.getElementById('editBultos').value,10)||1);
+    const rackNew = parseInt(document.getElementById('editRack').value,10)||1;
+    const posicionNew = posicionStr(editNivelSel, rackNew);
+    try{
+      await apiPost({ action:'editarK', lp: row.lp, bultos, posicion: posicionNew, operador: check.nombre });
+      closeModal('editModal');
+      showToast('✓ Cambio guardado');
+      buscarConsultaPorLp.length ? initConsultas() : null;
+    }catch(e){ showToast('⚠ Error al guardar'); }
+  };
+  openModal('editModal');
+}
+</script>
+</body>
+</html>
