@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Escáner de unidades</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#000;color:#fff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;overflow:hidden}
+#video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.marco{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);width:70vw;max-width:300px;aspect-ratio:1/1;
+  border:3px solid #fff;border-radius:22px;box-shadow:0 0 0 2000px rgba(0,0,0,.45);pointer-events:none;z-index:2}
+.arriba{position:absolute;top:0;left:0;right:0;z-index:3;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 16px 24px;background:linear-gradient(180deg,rgba(0,0,0,.75),transparent)}
+.titulo{font-size:20px;font-weight:700}
+.sub{font-size:14px;color:rgba(255,255,255,.8);margin-top:4px;line-height:1.4;max-width:270px}
+.cerrar{width:48px;height:48px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;font-size:22px;cursor:pointer}
+.abajo{position:absolute;bottom:0;left:0;right:0;z-index:3;display:flex;flex-direction:column;gap:10px;
+  padding:24px 16px calc(18px + env(safe-area-inset-bottom,0px));background:linear-gradient(0deg,rgba(0,0,0,.85),transparent)}
+.pista{font-size:14px;color:rgba(255,255,255,.85);text-align:center}
+.error{display:none;background:#A8211B;color:#fff;font-size:14px;line-height:1.4;padding:10px 12px;border-radius:10px;text-align:center}
+.fila{display:flex;gap:8px}
+.fila input{flex:1;min-width:0;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;font-size:18px;font-family:inherit}
+.fila input::placeholder{color:rgba(255,255,255,.6)}
+.fila button{padding:0 22px;border:none;border-radius:12px;background:#C4007A;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.listo{position:absolute;inset:0;z-index:4;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(27,110,69,.75)}
+.listo .eco{font-size:64px;font-weight:800;letter-spacing:.02em}
+.listo .txt{font-size:16px}
+.sincam{position:fixed;inset:0;z-index:5;display:none;align-items:center;justify-content:center;padding:24px;background:#1E1A1D}
+.sincam .caja{width:100%;max-width:360px;display:flex;flex-direction:column;gap:16px;text-align:center}
+.sincam p{font-size:15px;line-height:1.5;color:rgba(255,255,255,.85)}
+</style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline muted></video>
+<div class="marco"></div>
+
+<div class="listo" id="listo"><div class="txt">Unidad leída</div><div class="eco" id="listoEco"></div></div>
+
+<div class="arriba">
+  <div><div class="titulo">Escanear unidad</div><div class="sub">Centra el QR de la credencial en el recuadro</div></div>
+  <button type="button" class="cerrar" id="btnCerrar" aria-label="Cerrar escáner">&#10005;</button>
+</div>
+
+<div class="abajo">
+  <div class="error" id="error" role="alert"></div>
+  <div class="pista">Lectura automática. Mantén firme el teléfono, a unos 15 cm.</div>
+  <div class="fila">
+    <input id="manual" type="text" autocomplete="off" placeholder="O escribe el eco aquí" aria-label="Eco de la unidad">
+    <button type="button" id="btnManual">OK</button>
+  </div>
+</div>
+
+<div class="sincam" id="sincam">
+  <div class="caja">
+    <p id="sincamMsg">No se pudo abrir la cámara.</p>
+    <div class="fila">
+      <input id="manual2" type="text" autocomplete="off" placeholder="Escribe el eco aquí" aria-label="Eco de la unidad">
+      <button type="button" id="btnManual2">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Escáner en vivo del Reloj operativo (página EXTERNA, fuera del iframe
+// de Apps Script, igual que el escáner del proyecto anterior).
+// Usa el BarcodeDetector nativo de Chrome/Android con formato qr_code.
+// Solo si el navegador no lo tiene, carga jsQR como respaldo.
+// Devuelve el resultado a la app con postMessage y se cierra sola.
+// ============================================================
+var params  = new URLSearchParams(location.search);
+var PREFIJO = (params.get('prefijo') || 'ECO:').toUpperCase();
+var video = document.getElementById('video');
+var enviado = false, detectando = false, pausaHasta = 0;
+
+function $(id) { return document.getElementById(id); }
+
+async function iniciar() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return sinCamara('Este navegador no permite usar la cámara. Escribe el eco a mano.');
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+    video.srcObject = stream;
+    await video.play();
+    if ('BarcodeDetector' in window) detectorNativo(); else cargarRespaldo();
+  } catch (err) {
+    var n = (err && err.name) || '';
+    sinCamara(n === 'NotAllowedError' ? 'La cámara está bloqueada para esta página. Toca el ícono a la izquierda de la dirección, permite la Cámara y vuelve a abrir el escáner. También puedes escribir el eco a mano.'
+      : 'No se pudo abrir la cámara' + (n ? ' (' + n + ')' : '') + '. Escribe el eco a mano.');
+  }
+}
+
+function detectorNativo() {
+  var detector = new BarcodeDetector({ formats: ['qr_code'] });
+  (function tick() {
+    if (enviado) return;
+    if (!detectando && video.readyState === video.HAVE_ENOUGH_DATA && Date.now() > pausaHasta) {
+      detectando = true;
+      detector.detect(video).then(function (codes) {
+        detectando = false;
+        if (!enviado && codes.length) leido((codes[0].rawValue || '').trim());
+      }).catch(function () { detectando = false; });
+    }
+    requestAnimationFrame(tick);
+  })();
+}
+
+function cargarRespaldo() {
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+  s.onerror = function () { mostrarError('Este teléfono no tiene lectura automática. Escribe el eco a mano.'); };
+  s.onload = function () {
+    var c = document.createElement('canvas'), ctx = c.getContext('2d', { willReadFrequently: true });
+    (function tick() {
+      if (enviado) return;
+      if (video.readyState === video.HAVE_ENOUGH_DATA && Date.now() > pausaHasta) {
+        c.width = 480; c.height = Math.round(480 * video.videoHeight / video.videoWidth) || 360;
+        ctx.drawImage(video, 0, 0, c.width, c.height);
+        var r = window.jsQR(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height, { inversionAttempts: 'dontInvert' });
+        if (r && r.data) leido(String(r.data).trim());
+      }
+      setTimeout(tick, 120);
+    })();
+  };
+  document.head.appendChild(s);
+}
+
+function leido(texto) {
+  if (!texto || enviado) return;
+  if (texto.toUpperCase().indexOf(PREFIJO) !== 0) {
+    pausaHasta = Date.now() + 2000;
+    mostrarError('Ese QR no es de una unidad. Apunta al QR de la credencial.');
+    return;
+  }
+  confirmar(texto, texto.slice(PREFIJO.length));
+}
+
+function confirmar(codigo, visible) {
+  if (enviado) return;
+  enviado = true;
+  if (navigator.vibrate) { try { navigator.vibrate(80); } catch (e) {} }
+  $('listoEco').textContent = visible; $('listo').style.display = 'flex';
+  apagar();
+  responder({ code: codigo });
+  setTimeout(function () { window.close(); }, 450);
+}
+
+function responder(datos) {
+  datos.source = 'reloj-escaner';
+  try { if (window.opener && !window.opener.closed) window.opener.postMessage(datos, '*'); } catch (e) {}
+}
+
+function apagar() { try { var s = video.srcObject; if (s) s.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {} }
+
+function mostrarError(msg) {
+  var e = $('error'); e.textContent = msg; e.style.display = 'block';
+  clearTimeout(mostrarError.t); mostrarError.t = setTimeout(function () { e.style.display = 'none'; }, 4000);
+}
+
+function sinCamara(msg) { $('sincamMsg').textContent = msg; $('sincam').style.display = 'flex'; $('manual2').focus(); }
+
+function manual(id) {
+  var v = $(id).value.trim().toUpperCase();
+  if (!/^[A-Z0-9\-]{1,12}$/.test(v)) return mostrarError('Escribe un eco válido.');
+  confirmar(v, v);
+}
+
+$('btnCerrar').onclick = function () { apagar(); responder({ cancelado: true }); window.close(); };
+$('btnManual').onclick = function () { manual('manual'); };
+$('btnManual2').onclick = function () { manual('manual2'); };
+$('manual').onkeydown = function (e) { if (e.key === 'Enter') manual('manual'); };
+$('manual2').onkeydown = function (e) { if (e.key === 'Enter') manual('manual2'); };
+
+iniciar();
+</script>
+</body>
+</html>
